@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Balanz",
+    "slug": "balanz-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "balanz",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.balanz.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#4f46e5"
+      },
+      "package": "com.balanz.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#0b1020"
+        }
+      ],
+      "expo-sharing",
+      "expo-notifications",
+      [
+        "expo-local-authentication",
+        { "faceIDPermission": "Balanz usa Face ID para proteger tus datos financieros." }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Balanz usa la cámara para guardar la foto del ticket.",
+          "photosPermission": "Balanz accede a tus fotos para adjuntar tickets."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
