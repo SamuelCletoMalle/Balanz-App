@@ -80,6 +80,19 @@ export function interpretarTexto(texto: string): Captacion {
     if (en) comercio = limpiarComercio(en[1]);
   }
 
+  // Texto libre y corto, como el que se escribe en un atajo: "Café 3,50", "3,50 café", "Ingreso 20 Abuela".
+  if (importe === null && !comercio && t.length <= 80 && !t.includes('\n')) {
+    const palabras = t.trim().split(/\s+/);
+    const i = palabras.findIndex((p) => /^\d+(?:[.,]\d+)*€?$/.test(p));
+    if (i !== -1) {
+      const n = numeroDesdeTexto(palabras[i].replace('€', ''));
+      if (n !== null) {
+        importe = Math.abs(n);
+        comercio = limpiarComercio(palabras.filter((_, k) => k !== i && !/^(?:ingresos?|gastos?)[.:]?$/i.test(palabras[k])).join(' '));
+      }
+    }
+  }
+
   const esIngreso = RE_INGRESO.test(t);
   if (esIngreso && !comercio) {
     const de = t.match(/\bde\s+([A-ZÁÉÍÓÚÑ][^\n.,;]*?)(?=\s+(?:con|el|a las|concepto)\b|[.,;\n]|$)/);

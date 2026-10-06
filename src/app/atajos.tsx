@@ -170,9 +170,14 @@ export default function AtajosScreen() {
             <Paso tema={tema} n={3}>También puedes asignarlo al <Text style={styles.b}>botón de acción</Text> (iPhone 15 Pro o posterior) o ponerlo en la pantalla de bloqueo.</Paso>
             <Paso tema={tema} n={4}>En iOS 17 o anterior: añade el atajo a la pantalla de inicio o dile “Oye Siri, añadir gasto”.</Paso>
             <Text style={[styles.seccion, { color: tema.textoSuave }]}>VARIANTE SIN ABRIR LA APP</Text>
-            <Paso tema={tema} n={1}>En el atajo añade <Text style={styles.b}>Pedir entrada</Text> (Número) “¿Cuánto?” y <Text style={styles.b}>Pedir entrada</Text> (Texto) “¿En qué?”.</Paso>
-            <Paso tema={tema} n={2}>Añade <Text style={styles.b}>Obtener contenido de URL</Text> con la URL, la cabecera y el token de arriba y en <Text style={styles.b}>p_texto</Text> pon: “Comercio: ” + la respuesta de “¿En qué?” + “ Importe: ” + la respuesta de “¿Cuánto?”.</Paso>
-            <Paso tema={tema} n={3}>Para ingresos, haz una copia y empieza el texto por “Ingreso. ”. Llega a Pendientes como ingreso.</Paso>
+            <Paso tema={tema} n={1}>Atajos → “+” → <Text style={styles.b}>Obtener contenido de URL</Text>. Pon la URL, <Text style={styles.b}>Mostrar más</Text> → método <Text style={styles.b}>POST</Text>, cabeceras <Text style={styles.b}>apikey</Text> y <Text style={styles.b}>Content-Type: application/json</Text>.</Paso>
+            <Paso tema={tema} n={2}><Text style={styles.b}>Solicitar cuerpo</Text> → <Text style={styles.b}>JSON</Text>. Añade un campo Texto <Text style={styles.b}>p_token</Text> con tu token y otro Texto <Text style={styles.b}>p_texto</Text>.</Paso>
+            <Paso tema={tema} n={3}>Toca el valor de <Text style={styles.b}>p_texto</Text> y elige la variable <Text style={styles.b}>Preguntar cada vez</Text>. Al ejecutar el atajo te pedirá el texto: escribe, por ejemplo, “Café 3,50”.</Paso>
+            <Paso tema={tema} n={4}>Para ingresos, haz una copia y escribe “Ingreso 20 Abuela”. Llega a Pendientes como ingreso.</Paso>
+            <Text style={[styles.seccion, { color: tema.textoSuave }]}>SIN CONFIRMAR EN PENDIENTES</Text>
+            <Paso tema={tema} n={1}>En la URL cambia el final <Text style={styles.b}>registrar_captacion</Text> por <Text style={styles.b}>registrar_movimiento</Text>. El gasto o ingreso se apunta directamente (la app lo recoge la próxima vez que se abra).</Paso>
+            <Paso tema={tema} n={2}>Si no entiende el importe, lo deja en Pendientes para que lo revises.</Paso>
+            <Paso tema={tema} n={3}>Para avisarte: añade <Text style={styles.b}>Mostrar notificación</Text> y elige como texto el <Text style={styles.b}>Contenido de URL</Text>. Verás, por ejemplo, “Gasto 3.50 € · Café”.</Paso>
             <Text style={[styles.seccion, { color: tema.textoSuave }]}>ANDROID</Text>
             <Paso tema={tema} n={1}>Mantén pulsado un hueco del panel de ajustes rápidos → lápiz → <Text style={styles.b}>MacroDroid</Text> o <Text style={styles.b}>Tasker</Text> te permiten crear un botón (tile).</Paso>
             <Paso tema={tema} n={2}>Acción del botón: “Abrir URL / enlace” con <Text style={styles.b}>balanz://nuevo</Text>.</Paso>

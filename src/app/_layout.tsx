@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View, ActivityIndicator } from 'react-native';
+import { useDisposicion } from '../layout';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,8 @@ function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefi
 
 export default function RootLayout() {
   const tema = useTema();
+  // En un ordenador (web ancha) el menú pasa a un lado y el contenido se centra con un ancho cómodo; en el móvil no cambia nada.
+  const { escritorio, amplio } = useDisposicion();
   const [session, setSession] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
   const [intro, setIntro] = useState(true);
@@ -66,11 +69,9 @@ export default function RootLayout() {
     }
     let activo = true;
     (async () => {
-      if (!onboardingHecho()) {
-        await conTiempoMaximo(sincronizarPerfil().catch(() => {}), 4000);
-        // Quien ya tenía movimientos no necesita el alta: puede fijar su dinero inicial desde Más.
-        if (!onboardingHecho() && contarGastos() > 0) marcarOnboarding();
-      }
+      await conTiempoMaximo(sincronizarPerfil().catch(() => {}), 4000);
+      // Quien ya tenía movimientos no necesita el alta: puede fijar su dinero inicial desde Más.
+      if (!onboardingHecho() && contarGastos() > 0) marcarOnboarding();
       if (activo) setPerfilListo(true);
     })();
     return () => {
@@ -137,12 +138,24 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Tabs
           backBehavior="history"
+          screenLayout={
+            escritorio
+              ? ({ children }) => (
+                  <View style={{ flex: 1, alignItems: 'center', backgroundColor: tema.fondo }}>
+                    <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 1240 : 880 }}>{children}</View>
+                  </View>
+                )
+              : undefined
+          }
           screenOptions={{
             headerShown: false,
+            ...(escritorio ? { tabBarPosition: 'left' as const, tabBarVariant: 'material' as const } : {}),
             tabBarActiveTintColor: tema.primario,
             tabBarInactiveTintColor: tema.textoSuave,
-            tabBarStyle: { backgroundColor: tema.tarjeta, borderTopColor: tema.borde },
-            tabBarLabelStyle: { fontWeight: '600', fontSize: 11 },
+            tabBarStyle: escritorio
+              ? { backgroundColor: tema.tarjeta, borderRightColor: tema.borde, borderRightWidth: 1, width: 220, paddingTop: 24 }
+              : { backgroundColor: tema.tarjeta, borderTopColor: tema.borde },
+            tabBarLabelStyle: escritorio ? { fontWeight: '600', fontSize: 15 } : { fontWeight: '600', fontSize: 11 },
             sceneStyle: { backgroundColor: tema.fondo },
           }}
         >

@@ -3,15 +3,17 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useState, useEffect } from 'react';
+import { useDisposicion } from '../layout';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Switch, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { FondosForm, fondosATexto, textoAFondos } from '../components/Onboarding';
 import Presionable from '../components/Presionable';
 import { toque } from '../haptics';
-import { Text } from '../components/Texto';
+import { Text, TextInput } from '../components/Texto';
+import { numeroDesdeTexto } from '../captura';
 import { Alert } from '../dialogos';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { contarGastos, borrarTodosLosDatos, getReglas, getMetas, getRecurrentes, getFondosIniciales, setFondosIniciales, sumaFondos } from '../db';
+import { contarGastos, borrarTodosLosDatos, getReglas, getMetas, getRecurrentes, getFondosIniciales, setFondosIniciales, sumaFondos, getSaldoTotal } from '../db';
 import { exportarGastosAExcel, importarGastosDesdeExcel } from '../excel';
 import { supabase } from '../supabase';
 import { borrarTodosLosGastosDeLaNube, subirPerfil } from '../sync';
@@ -104,6 +106,10 @@ function Segmentos<T extends string>({
 }
 
 export default function MasScreen() {
+  const { amplio } = useDisposicion();
+  const abarcar = amplio ? ({ columnSpan: 'all', marginBottom: 14 } as object) : null;
+  // En columnas, cada bloque se queda entero en la suya.
+  const bloque = amplio ? ({ breakInside: 'avoid', marginBottom: 14 } as object) : null;
   const tema = useTema();
   const prefs = usePreferencias();
   const router = useRouter();
@@ -131,6 +137,38 @@ export default function MasScreen() {
     setFondosAbierto(false);
   };
 
+  // Saldo disponible: se escribe lo que hay de verdad y la diferencia se reparte en el dinero inicial (cuenta bancaria),
+  // así los movimientos no se tocan y el saldo cuadra con la realidad.
+  const [saldoAbierto, setSaldoAbierto] = useState(false);
+  const [saldoActual, setSaldoActual] = useState(() => getSaldoTotal());
+  const [saldoTexto, setSaldoTexto] = useState('');
+
+  const abrirSaldo = () => {
+    const actual = getSaldoTotal();
+    setSaldoActual(actual);
+    setSaldoTexto(String(Math.round(actual * 100) / 100).replace('.', ','));
+    setSaldoAbierto(true);
+  };
+
+  const guardarSaldo = () => {
+    const objetivo = numeroDesdeTexto(saldoTexto.replace('€', ''));
+    if (objetivo === null || !isFinite(objetivo)) {
+      Alert.alert('Saldo no válido', 'Escribe un importe, por ejemplo 1250,40.');
+      return;
+    }
+    const diferencia = Math.round((objetivo - getSaldoTotal()) * 100) / 100;
+    if (diferencia !== 0) {
+      const f = getFondosIniciales();
+      const nuevo = { ...f, banco: Math.round((f.banco + diferencia) * 100) / 100 };
+      setFondosIniciales(nuevo);
+      setFondosTotal(sumaFondos(nuevo));
+      subirPerfil().catch(() => {});
+    }
+    setSaldoActual(objetivo);
+    toque();
+    setSaldoAbierto(false);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
   }, []);
@@ -138,6 +176,7 @@ export default function MasScreen() {
   useFocusEffect(
     useCallback(() => {
       setNumGastos(contarGastos());
+      setSaldoActual(getSaldoTotal());
       setCuentas({ reglas: getReglas().length, metas: getMetas().length, recurrentes: getRecurrentes().length });
     }, [])
   );
@@ -229,10 +268,10 @@ export default function MasScreen() {
   const inicial = (session?.user.email ?? '?').charAt(0).toUpperCase();
 
   return (
-    <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={[styles.titulo, { color: tema.texto }]}>Más</Text>
+    <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Más</Text>
 
-      <View style={[styles.perfil, { backgroundColor: tema.tarjeta }]}>
+      <View style={[styles.perfil, { backgroundColor: tema.tarjeta }, abarcar]}>
         <View style={[styles.avatar, { backgroundColor: tema.primario }]}>
           <Text style={{ color: tema.primarioTexto, fontSize: 22, fontWeight: '800' }}>{inicial}</Text>
         </View>
@@ -244,8 +283,10 @@ export default function MasScreen() {
         </View>
       </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>HERRAMIENTAS</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
+        <Fila tema={tema} icono="wallet-outline" titulo="Saldo disponible" detalle={`Ahora: ${formatoEuro(saldoActual)} · toca para ajustarlo`} onPress={abrirSaldo} />
         <Fila tema={tema} icono="cash-outline" titulo="Dinero inicial" detalle={fondosTotal > 0 ? `Empezaste con ${formatoEuro(fondosTotal)}` : 'Indica con cuánto dinero empiezas'} onPress={abrirFondos} />
         <Fila tema={tema} icono="repeat-outline" titulo="Recurrentes" detalle={`${cuentas.recurrentes} programados · suscripciones detectadas`} onPress={() => router.push('/recurrentes')} />
         <Fila tema={tema} icono="flag-outline" titulo="Metas de ahorro" detalle={`${cuentas.metas} metas`} onPress={() => router.push('/metas')} />
@@ -253,7 +294,9 @@ export default function MasScreen() {
         <Fila tema={tema} icono="document-text-outline" titulo="Informe mensual" detalle="Comparativa y PDF" onPress={() => router.push('/informe')} />
         <Fila tema={tema} icono="sparkles-outline" titulo="Categorías aprendidas" detalle={`${cuentas.reglas} comercios recordados`} onPress={() => router.push('/reglas')} ultimo />
       </View>
+      </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>CAPTURA AUTOMÁTICA</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Fila
@@ -265,7 +308,9 @@ export default function MasScreen() {
           ultimo
         />
       </View>
+      </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>ACCESIBILIDAD</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Segmentos<TamanoTexto>
@@ -306,7 +351,9 @@ export default function MasScreen() {
           ultimo
         />
       </View>
+      </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>SEGURIDAD Y AVISOS</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Fila
@@ -325,7 +372,9 @@ export default function MasScreen() {
           ultimo
         />
       </View>
+      </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>DATOS</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         {cargando ? (
@@ -337,15 +386,50 @@ export default function MasScreen() {
           </>
         )}
       </View>
+      </View>
 
+      <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>CUENTA</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Fila tema={tema} icono="log-out-outline" titulo="Cerrar sesión" color={tema.peligro} onPress={cerrarSesion} />
         <Fila tema={tema} icono="trash-outline" titulo="Borrar todos los datos" color={tema.peligro} onPress={confirmarBorrado} ultimo />
       </View>
+      </View>
 
-      <Text style={[styles.version, { color: tema.textoSuave }]}>Balanz · versión 1.1.0</Text>
-      <Modal visible={fondosAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setFondosAbierto(false)}>
+      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Balanz · versión 1.0.0</Text>
+      <Modal visible={saldoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setSaldoAbierto(false)}>
+        <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setSaldoAbierto(false)} />
+          <View style={[styles.hoja, { backgroundColor: tema.fondo }]}>
+            <Text style={{ color: tema.texto, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 }}>Saldo disponible</Text>
+            <Text style={{ color: tema.textoSuave, fontSize: 13, marginTop: -6 }}>
+              Escribe cuánto dinero tienes ahora de verdad. Balanz ajusta tu dinero inicial para que el saldo coincida, sin tocar tus movimientos.
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: tema.tarjeta, borderColor: tema.borde, borderWidth: 1, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 14 }}>
+              <TextInput
+                accessibilityLabel="Saldo disponible en euros"
+                style={{ color: tema.texto, fontSize: 32, fontWeight: '800', letterSpacing: -0.8, flex: 1, padding: 0 }}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={tema.textoSuave}
+                value={saldoTexto}
+                onChangeText={setSaldoTexto}
+                autoFocus
+              />
+              <Text style={{ color: tema.textoSuave, fontSize: 24, fontWeight: '700' }}>€</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Presionable contenedor={{ flex: 1 }} style={[styles.botonHoja, { backgroundColor: tema.tarjetaSuave }]} onPress={() => setSaldoAbierto(false)}>
+                <Text style={{ color: tema.texto, fontWeight: '700', fontSize: 16 }}>Cancelar</Text>
+              </Presionable>
+              <Presionable contenedor={{ flex: 2 }} style={[styles.botonHoja, { backgroundColor: tema.primario }]} onPress={guardarSaldo}>
+                <Text style={{ color: tema.primarioTexto, fontWeight: '800', fontSize: 16 }}>Guardar saldo</Text>
+              </Presionable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={fondosAbierto}transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setFondosAbierto(false)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setFondosAbierto(false)} />
           <View style={[styles.hoja, { backgroundColor: tema.fondo }]}>
@@ -375,6 +459,7 @@ const styles = StyleSheet.create({
   botonHoja: { minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
   titulo: { fontSize: 32, fontWeight: '800', marginBottom: 6 },
+  rejilla: { display: 'block', columnCount: 2, columnGap: 14 } as object,
   perfil: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 22 },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   seccion: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8, marginTop: 14, marginLeft: 6 },

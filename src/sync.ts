@@ -174,7 +174,10 @@ export async function subirTodosLosGastosLocales(): Promise<void> {
 // Se guarda también en la nube para no volver a pedir el alta en otro dispositivo.
 // Si la tabla `perfiles` no existe todavía (supabase/perfil.sql sin ejecutar), todo sigue funcionando en local.
 
-/** Trae el perfil de la nube y, si el alta ya se hizo en otro dispositivo, la da por hecha aquí. */
+/**
+ * Deja el perfil igual en todos los dispositivos: si la nube ya tiene uno, manda la nube (dinero inicial, límite);
+ * si no tiene ninguno y este dispositivo ya hizo el alta, lo sube desde aquí.
+ */
 export async function sincronizarPerfil(): Promise<void> {
   const userId = await usuarioId();
   if (!userId) return;
@@ -183,12 +186,16 @@ export async function sincronizarPerfil(): Promise<void> {
     .select('fondos, onboarding, limite')
     .eq('user_id', userId)
     .maybeSingle();
-  if (error || !data || !data.onboarding) return;
-  if (!onboardingHecho()) {
-    setFondosIniciales(leerFondos(data.fondos as string | null));
-    if (data.limite && Number(data.limite) > 0 && getLimite() === 0) setLimite(Number(data.limite));
-    marcarOnboarding();
+  if (error) return;
+  if (!data) {
+    if (onboardingHecho()) await subirPerfil().catch(() => {});
+    return;
   }
+  if (!data.onboarding) return;
+  setFondosIniciales(leerFondos(data.fondos as string | null));
+  const limite = Number(data.limite);
+  if (limite > 0) setLimite(limite);
+  if (!onboardingHecho()) marcarOnboarding();
 }
 
 export async function subirPerfil(): Promise<void> {

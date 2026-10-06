@@ -3,6 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback } from 'react';
+import { useDisposicion } from '../layout';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
@@ -27,6 +28,9 @@ import { comprobarPresupuestos } from '../avisos';
 import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
 
 export default function ResumenScreen() {
+  const { amplio } = useDisposicion();
+  // En pantallas anchas las tarjetas se reparten en dos columnas; el título, el saldo y el resumen ocupan todo el ancho.
+  const abarcar = amplio ? ({ gridColumn: '1 / -1' } as object) : null;
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const router = useRouter();
@@ -96,12 +100,12 @@ export default function ResumenScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: tema.fondo }}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.titulo, { color: tema.texto }]}>Resumen</Text>
+      <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Resumen</Text>
 
-      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]} accessible accessibilityLabel={`Tu saldo: ${formatoEuro(cuentas.saldo)}`}>
+      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]} accessible accessibilityLabel={`Tu saldo: ${formatoEuro(cuentas.saldo)}`}>
         <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>TU SALDO</Text>
         <Text style={{ color: cuentas.saldo >= 0 ? tema.texto : tema.peligro, fontSize: 34, fontWeight: '800', letterSpacing: -0.9, fontVariant: ['tabular-nums'] }}>
           {formatoEuro(cuentas.saldo)}
@@ -120,7 +124,7 @@ export default function ResumenScreen() {
         ))}
       </View>
 
-      <View style={styles.dosColumnas}>
+      <View style={[styles.dosColumnas, abarcar]}>
         <View style={[styles.mini, { backgroundColor: tema.tarjeta }]}>
           <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>INGRESOS</Text>
           <Text style={{ color: tema.exito, fontSize: 20, fontWeight: '800' }}>{formatoEuro(ingresos)}</Text>
@@ -134,7 +138,7 @@ export default function ResumenScreen() {
         </View>
       </View>
       {ingresos > 0 ? (
-        <Text style={{ color: tema.textoSuave, fontSize: 12, marginTop: -6, marginLeft: 6 }}>
+        <Text style={[{ color: tema.textoSuave, fontSize: 12, marginTop: -6, marginLeft: 6 }, abarcar]}>
           Has ahorrado el {Math.max(0, Math.round((balance / ingresos) * 100))} % de tus ingresos este mes.
         </Text>
       ) : null}
@@ -367,6 +371,7 @@ const styles = StyleSheet.create({
   container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   titulo: { fontSize: 32, fontWeight: '800' },
   dosColumnas: { flexDirection: 'row', gap: 12 },
+  rejilla: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignItems: 'start' } as object,
   mini: { flex: 1, borderRadius: 20, padding: 16, gap: 4 },
   tarjeta: { borderRadius: 22, padding: 18, gap: 12 },
   fila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },

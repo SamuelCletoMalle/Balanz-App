@@ -16,13 +16,15 @@ import Presionable from '../components/Presionable';
 import { toque } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { guardarMovimiento, eliminarMovimiento } from '../movimientos';
-import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, useTema } from '../tema';
+import { useDisposicion } from '../layout';
+import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, useTema, useEsOscuro } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
 
 const SALIDA = Easing.bezier(...CURVAS.salida);
 
 export default function GastosScreen() {
   const tema = useTema();
+  const { amplio } = useDisposicion();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const { reducirMovimiento, altoContraste } = usePreferencias();
   const [saldo, setSaldo] = useState(0);
@@ -83,6 +85,12 @@ export default function GastosScreen() {
   }, [gastos, busqueda, filtro, filtroEtiqueta]);
 
   const porcentaje = limite > 0 ? Math.min(totalMes / limite, 1) : 0;
+  // El saldo se lee en blanco sobre el degradado oscuro y en negro sobre uno claro, según el modo (o el del sistema).
+  const oscuroActivo = useEsOscuro();
+  const heroClaro = !oscuroActivo && !altoContraste;
+  const tinta = altoContraste ? tema.primarioTexto : heroClaro ? '#0f172a' : '#ffffff';
+  const puntoHero = heroClaro ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.18)';
+  const barraHero = heroClaro ? 'rgba(15,23,42,0.12)' : 'rgba(255,255,255,0.25)';
   const colorBarra = limite > 0 && totalMes > limite ? tema.peligro : porcentaje > 0.8 ? tema.aviso : tema.exito;
 
   const abrirNuevo = () => {
@@ -108,61 +116,101 @@ export default function GastosScreen() {
     setModalVisible(false);
   };
 
-  const cabecera = (
-    <View style={{ gap: 14, paddingBottom: 6 }}>
+  const heroBloque = (
       <Animated.View entering={reducirMovimiento ? undefined : FadeInDown.duration(380).easing(SALIDA)}>
         <LinearGradient
-          colors={altoContraste ? [tema.primario, tema.primario] : ['#4f46e5', '#7c3aed']}
+          colors={altoContraste ? [tema.primario, tema.primario] : heroClaro ? ['#c7d2fe', '#ddd6fe'] : ['#4f46e5', '#7c3aed']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
           <View pointerEvents="none" style={styles.heroBrillo} />
-          <Text style={[styles.heroEtiqueta, { color: tema.primarioTexto }]}>
+          <Text style={[styles.heroEtiqueta, { color: tinta }]}>
             Saldo total {sincronizando ? '· sincronizando…' : ''}
           </Text>
           <Text
             accessibilityLabel={`Saldo total ${formatoEuro(saldo)}`}
-            style={[styles.heroImporte, { color: tema.primarioTexto }]}
+            style={[styles.heroImporte, { color: tinta }]}
           >
             {formatoEuro(saldo)}
           </Text>
           <View style={styles.heroFila}>
             <View style={styles.heroDato}>
-              <View style={styles.heroPunto}>
-                <Ionicons name="arrow-up" size={13} color={tema.primarioTexto} />
+              <View style={[styles.heroPunto, { backgroundColor: puntoHero }]}>
+                <Ionicons name="arrow-up" size={13} color={tinta} />
               </View>
               <View>
-                <Text style={[styles.heroMini, { color: tema.primarioTexto }]}>Gastado este mes</Text>
-                <Text style={[styles.heroMiniImporte, { color: tema.primarioTexto }]}>{formatoEuro(totalMes)}</Text>
+                <Text style={[styles.heroMini, { color: tinta }]}>Gastado este mes</Text>
+                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(totalMes)}</Text>
               </View>
             </View>
             <View style={styles.heroDato}>
-              <View style={styles.heroPunto}>
-                <Ionicons name="arrow-down" size={13} color={tema.primarioTexto} />
+              <View style={[styles.heroPunto, { backgroundColor: puntoHero }]}>
+                <Ionicons name="arrow-down" size={13} color={tinta} />
               </View>
               <View>
-                <Text style={[styles.heroMini, { color: tema.primarioTexto }]}>Ingresos del mes</Text>
-                <Text style={[styles.heroMiniImporte, { color: tema.primarioTexto }]}>{formatoEuro(ingresosMes)}</Text>
+                <Text style={[styles.heroMini, { color: tinta }]}>Ingresos del mes</Text>
+                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(ingresosMes)}</Text>
               </View>
             </View>
           </View>
           {limite > 0 ? (
             <View style={{ gap: 6 }}>
-              <View style={styles.heroBarraFondo}>
+              <View style={[styles.heroBarraFondo, { backgroundColor: barraHero }]}>
                 <View style={[styles.heroBarra, { width: `${porcentaje * 100}%`, backgroundColor: colorBarra }]} />
               </View>
-              <Text style={[styles.heroPie, { color: tema.primarioTexto }]}>
+              <Text style={[styles.heroPie, { color: tinta }]}>
                 {totalMes <= limite
                   ? `Te quedan ${formatoEuro(limite - totalMes)} de tu límite de ${formatoEuro(limite)}`
                   : `Te has pasado ${formatoEuro(totalMes - limite)} de tu límite`}
               </Text>
             </View>
           ) : (
-            <Text style={[styles.heroPie, { color: tema.primarioTexto }]}>Fija un límite mensual en Resumen</Text>
+            <Text style={[styles.heroPie, { color: tinta }]}>Fija un límite mensual en Resumen</Text>
           )}
         </LinearGradient>
       </Animated.View>
+  );
+
+  // Gasto del mes por categoría (columna izquierda en pantallas anchas).
+  const porCategoria = useMemo(() => {
+    const mes = new Date().toISOString().slice(0, 7);
+    const sumas = new Map<string, number>();
+    gastos.forEach((g) => {
+      if (g.tipo !== 'ingreso' && g.fecha.startsWith(mes)) sumas.set(g.categoria, (sumas.get(g.categoria) ?? 0) + g.importe);
+    });
+    const filas = Array.from(sumas.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return { filas, max: filas[0]?.[1] ?? 0 };
+  }, [gastos]);
+
+  const panelCategorias = (
+    <View style={[styles.panel, { backgroundColor: tema.tarjeta }]}>
+      <Text style={{ color: tema.texto, fontSize: 16, fontWeight: '700' }}>Gasto por categoría este mes</Text>
+      {porCategoria.filas.length === 0 ? (
+        <Text style={{ color: tema.textoSuave, fontSize: 13 }}>Cuando añadas gastos este mes, verás aquí en qué se te va el dinero.</Text>
+      ) : (
+        porCategoria.filas.map(([nombre, total]) => {
+          const cat = infoCategoria(nombre);
+          return (
+            <View key={nombre} style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={cat.icono} size={16} color={cat.color} />
+                <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '600', flex: 1 }}>{nombre}</Text>
+                <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{formatoEuro(total)}</Text>
+              </View>
+              <View style={{ height: 6, borderRadius: 3, backgroundColor: tema.tarjetaSuave, overflow: 'hidden' }}>
+                <View style={{ height: '100%', borderRadius: 3, width: `${(total / porCategoria.max) * 100}%`, backgroundColor: cat.color }} />
+              </View>
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
+
+  const cabecera = (
+    <View style={{ gap: 14, paddingBottom: 6 }}>
+      {amplio ? null : heroBloque}
 
       <View style={[styles.buscador, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}>
         <Ionicons name="search-outline" size={18} color={tema.textoSuave} />
@@ -212,6 +260,7 @@ export default function GastosScreen() {
           })}
         </ScrollView>
       ) : null}
+
     </View>
   );
 
@@ -219,6 +268,24 @@ export default function GastosScreen() {
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
       <Text style={[styles.titulo, { color: tema.texto }]}>Movimientos</Text>
 
+      <View style={amplio ? { flex: 1, flexDirection: 'row', gap: 28 } : { flex: 1 }}>
+        {amplio ? (
+          <ScrollView style={{ width: 400, flexGrow: 0 }} contentContainerStyle={{ gap: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+            <Presionable
+              accessibilityLabel="Añadir movimiento"
+              style={[styles.botonNuevo, { backgroundColor: tema.primario }]}
+              onPress={() => {
+                toque();
+                abrirNuevo();
+              }}
+            >
+              <Ionicons name="add" size={22} color={tema.primarioTexto} />
+              <Text style={{ color: tema.primarioTexto, fontSize: 16, fontWeight: '700' }}>Añadir movimiento</Text>
+            </Presionable>
+            {heroBloque}
+            {panelCategorias}
+          </ScrollView>
+        ) : null}
       <SectionList
         sections={secciones}
         keyExtractor={(g) => g.id}
@@ -292,19 +359,22 @@ export default function GastosScreen() {
           );
         }}
       />
+      </View>
 
-      <Presionable
-        accessibilityLabel="Añadir movimiento"
-        contenedor={styles.fabContenedor}
-        style={[styles.fab, { backgroundColor: tema.primario, shadowColor: tema.sombra }]}
-        escala={0.94}
-        onPress={() => {
-          toque();
-          abrirNuevo();
-        }}
-      >
-        <Ionicons name="add" size={32} color={tema.primarioTexto} />
-      </Presionable>
+      {amplio ? null : (
+        <Presionable
+          accessibilityLabel="Añadir movimiento"
+          contenedor={styles.fabContenedor}
+          style={[styles.fab, { backgroundColor: tema.primario, shadowColor: tema.sombra }]}
+          escala={0.94}
+          onPress={() => {
+            toque();
+            abrirNuevo();
+          }}
+        >
+          <Ionicons name="add" size={32} color={tema.primarioTexto} />
+        </Presionable>
+      )}
 
       <GastoModal
         visible={modalVisible}
@@ -319,6 +389,8 @@ export default function GastosScreen() {
 }
 
 const styles = StyleSheet.create({
+  panel: { borderRadius: 24, padding: 18, gap: 14 },
+  botonNuevo: { height: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
   titulo: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8, marginBottom: 14 },
   hero: { borderRadius: 28, padding: 22, gap: 14, overflow: 'hidden' },

@@ -10,40 +10,45 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Crypto from 'expo-crypto';
 import { Gasto, NuevoGasto, fechaHoy, getFondosIniciales, getGastos, insertGasto, setFondosIniciales, sumaFondos } from './db';
 import { adivinarCategoria, numeroDesdeTexto } from './captura';
+import { datosDeAnio, generarLibroContabilidad } from './excel-contabilidad';
 import { subirGastoANube } from './sync';
 
+/**
+ * Exporta la contabilidad del año con el formato de siempre: hoja "Inicio" con el resumen y una hoja por mes
+ * con INGRESOS a la izquierda y GASTOS a la derecha. Si hay movimientos en varios años, se exporta el año actual
+ * (o el más reciente que tenga datos).
+ */
 export async function exportarGastosAExcel() {
   const gastos = getGastos();
-
-  const hoja = XLSX.utils.json_to_sheet(
-    gastos.map((g) => ({
-      Descripcion: g.descripcion,
-      Categoria: g.categoria,
-      Importe: g.importe,
-      Tipo: g.tipo === 'ingreso' ? 'Ingreso' : 'Gasto',
-      Etiquetas: g.etiquetas,
-      Moneda: g.moneda,
-      Fecha: g.fecha,
-    }))
-  );
-  const libro = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(libro, hoja, 'Gastos');
+  const actual = Number(fechaHoy().slice(0, 4));
+  const anios = Array.from(new Set(gastos.map((g) => Number(g.fecha.slice(0, 4))).filter((n) => n > 1900)));
+  const anio = anios.includes(actual) || anios.length === 0 ? actual : Math.max(...anios);
+  const datos = datosDeAnio(gastos, sumaFondos(getFondosIniciales()), anio);
+  const nombre = `CONTABILIDAD_${anio}.xlsx`;
 
   if (Platform.OS === 'web') {
     // En web no hay sistema de archivos: se descarga directamente desde el navegador.
-    XLSX.writeFile(libro, `balanz-gastos-${fechaHoy()}.xlsx`);
+    const blob = await generarLibroContabilidad(datos, 'blob');
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
     return '';
   }
 
-  const base64 = XLSX.write(libro, { type: 'base64', bookType: 'xlsx' });
-  const ruta = FileSystem.cacheDirectory + `balanz-gastos-${Date.now()}.xlsx`;
+  const base64 = await generarLibroContabilidad(datos, 'base64');
+  const ruta = FileSystem.cacheDirectory + nombre;
   await FileSystem.writeAsStringAsync(ruta, base64, { encoding: FileSystem.EncodingType.Base64 });
 
   const disponible = await Sharing.isAvailableAsync();
   if (disponible) {
     await Sharing.shareAsync(ruta, {
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      dialogTitle: 'Exportar gastos',
+      dialogTitle: 'Exportar contabilidad',
     });
   }
   return ruta;
