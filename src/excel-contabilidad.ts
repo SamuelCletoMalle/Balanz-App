@@ -174,7 +174,7 @@ export type DatosLibro = {
 export function datosDeAnio(todos: Gasto[], dineroInicial: number, anio: number): DatosLibro {
   const prefijo = `${anio}-`;
   const antes = todos.filter((g) => g.fecha < prefijo);
-  const neto = antes.reduce((s, g) => s + (g.tipo === 'ingreso' ? g.importe : -g.importe), 0);
+  const neto = antes.reduce((s, g) => s + (g.tipo === 'ingreso' ? g.importe : g.tipo === 'gasto' ? -g.importe : 0), 0);
   return {
     anio,
     dineroInicioAnio: Math.round((dineroInicial + neto) * 100) / 100,
@@ -189,7 +189,7 @@ function hojaMes(mes: number, gastos: Gasto[]): { hoja: Hoja; ingresos: number; 
     .filter((g) => Number(g.fecha.slice(5, 7)) === mes + 1)
     .sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
   const ingresos = delMes.filter((g) => g.tipo === 'ingreso');
-  const salidas = delMes.filter((g) => g.tipo !== 'ingreso');
+  const salidas = delMes.filter((g) => g.tipo === 'gasto');
   const ultima = Math.max(FILAS_MIN, 4 + Math.max(ingresos.length, salidas.length));
   const totalIng = r2(ingresos.reduce((s, g) => s + g.importe, 0));
   const totalGas = r2(salidas.reduce((s, g) => s + g.importe, 0));

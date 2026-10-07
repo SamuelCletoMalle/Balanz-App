@@ -9,8 +9,9 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Crypto from 'expo-crypto';
 import { Gasto, NuevoGasto, fechaHoy, getFondosIniciales, getGastos, insertGasto, setFondosIniciales, sumaFondos } from './db';
-import { adivinarCategoria, numeroDesdeTexto } from './captura';
+import { adivinarCategoria } from './captura';
 import { datosDeAnio, generarLibroContabilidad } from './excel-contabilidad';
+import { filasPorBloques, filasPlanas, dineroInicioDeAnio, sinTildes, leerCsv, decodificarTexto, parecenCsv, type Fila } from './excel-lectura';
 import { subirGastoANube } from './sync';
 
 /**
@@ -62,129 +63,6 @@ function esDuplicado(a: Gasto, b: { descripcion: string; importe: number; fecha:
   );
 }
 
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-type Fila = { descripcion: string; categoria?: string; importe: number; fecha: string; tipo: 'gasto' | 'ingreso'; etiquetas: string };
-
-const sinTildes = (t: unknown) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
-
-function aNumero(celda: XLSX.CellObject | undefined): number {
-  if (!celda || celda.v === undefined || celda.v === null || celda.v === '') return 0;
-  if (typeof celda.v === 'number') return celda.v;
-  return numeroDesdeTexto(String(celda.v)) ?? 0;
-}
-
-/** Fecha de una celda (número de serie de Excel, fecha o texto) como AAAA-MM-DD. */
-function aFecha(celda: XLSX.CellObject | undefined, mesHoja: number | null): string {
-  if (!celda || celda.v === undefined || celda.v === '') return '';
-  let y = 0;
-  let m = 0;
-  let d = 0;
-  if (typeof celda.v === 'number') {
-    const f = XLSX.SSF.parse_date_code(celda.v);
-    if (!f) return '';
-    y = f.y;
-    m = f.m;
-    d = f.d;
-  } else if (celda.v instanceof Date) {
-    y = celda.v.getFullYear();
-    m = celda.v.getMonth() + 1;
-    d = celda.v.getDate();
-  } else {
-    const t = String(celda.v).trim();
-    const iso = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-    const dm = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/);
-    if (iso) {
-      y = +iso[1];
-      m = +iso[2];
-      d = +iso[3];
-    } else if (dm) {
-      d = +dm[1];
-      m = +dm[2];
-      y = +dm[3] < 100 ? 2000 + +dm[3] : +dm[3];
-    } else return '';
-  }
-  // En un libro por meses, una fecha de otro mes suele ser un día/mes tecleado al revés: manda la hoja.
-  if (mesHoja && m !== mesHoja && d >= 1 && d <= 28) m = mesHoja;
-  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
-
-/** Hojas tipo "INGRESOS | GASTOS" lado a lado, con cabecera Fecha / Cantidad / Concepto. */
-function filasPorBloques(hoja: XLSX.WorkSheet, nombre: string): Fila[] {
-  const ref = hoja['!ref'];
-  if (!ref) return [];
-  const rango = XLSX.utils.decode_range(ref);
-  const mesHoja = MESES.indexOf(sinTildes(nombre)) + 1 || null;
-  const celda = (r: number, c: number) => hoja[XLSX.utils.encode_cell({ r, c })] as XLSX.CellObject | undefined;
-  const filas: Fila[] = [];
-
-  for (let r = rango.s.r; r <= rango.e.r; r++) {
-    for (let c = rango.s.c; c <= rango.e.c - 2; c++) {
-      if (sinTildes(celda(r, c)?.v) !== 'fecha') continue;
-      if (!/cantidad|importe/.test(sinTildes(celda(r, c + 1)?.v))) continue;
-      if (!/concepto|descripcion/.test(sinTildes(celda(r, c + 2)?.v))) continue;
-
-      // El título del bloque (INGRESOS / GASTOS) está encima de la cabecera, en la misma columna.
-      let tipo: 'gasto' | 'ingreso' = 'gasto';
-      for (let rr = r - 1; rr >= rango.s.r; rr--) {
-        const t = sinTildes(celda(rr, c)?.v);
-        if (t.startsWith('ingreso')) {
-          tipo = 'ingreso';
-          break;
-        }
-        if (t.startsWith('gasto')) break;
-      }
-
-      for (let rr = r + 1; rr <= rango.e.r; rr++) {
-        const importe = aNumero(celda(rr, c + 1));
-        const descripcion = String(celda(rr, c + 2)?.v ?? '').replace(/\s+/g, ' ').trim();
-        if (!importe || !descripcion) continue;
-        const fecha = aFecha(celda(rr, c), mesHoja) || fechaHoy();
-        filas.push({ descripcion, importe: Math.abs(importe), fecha, tipo, etiquetas: '' });
-      }
-    }
-  }
-  return filas;
-}
-
-/** Hoja plana, una fila por movimiento (el formato que exporta Balanz). */
-function filasPlanas(hoja: XLSX.WorkSheet): Fila[] {
-  const filas: Fila[] = [];
-  XLSX.utils.sheet_to_json<any>(hoja).forEach((fila) => {
-    const pick = (...claves: string[]) => {
-      const k = Object.keys(fila).find((x) => claves.includes(sinTildes(x)));
-      return k === undefined ? undefined : fila[k];
-    };
-    const descripcion = String(pick('descripcion', 'concepto') ?? '').trim();
-    const crudo = pick('importe', 'cantidad');
-    const importe = typeof crudo === 'number' ? crudo : (numeroDesdeTexto(String(crudo ?? '')) ?? 0);
-    if (!descripcion || !importe) return;
-    const f = pick('fecha');
-    const fecha = aFecha({ t: typeof f === 'number' ? 'n' : 's', v: f }, null);
-    filas.push({
-      descripcion,
-      categoria: String(pick('categoria') ?? '').trim() || undefined,
-      importe: Math.abs(importe),
-      fecha: fecha || String(f ?? '').trim() || fechaHoy(),
-      tipo: /ingreso/i.test(String(pick('tipo') ?? '')) ? 'ingreso' : 'gasto',
-      etiquetas: String(pick('etiquetas') ?? '').trim(),
-    });
-  });
-  return filas;
-}
-
-/** Hoja "Inicio": el dinero con el que empezó el año, si el libro lo trae. */
-function dineroInicioDeAnio(libro: XLSX.WorkBook): number | null {
-  const hoja = libro.Sheets[libro.SheetNames.find((n) => sinTildes(n) === 'inicio') ?? ''];
-  if (!hoja?.['!ref']) return null;
-  const rango = XLSX.utils.decode_range(hoja['!ref']);
-  for (let r = rango.s.r; r <= rango.e.r; r++) {
-    const etiqueta = sinTildes((hoja[XLSX.utils.encode_cell({ r, c: 0 })] as XLSX.CellObject | undefined)?.v);
-    if (etiqueta.startsWith('dinero inicio')) return aNumero(hoja[XLSX.utils.encode_cell({ r, c: 1 })] as XLSX.CellObject | undefined) || null;
-  }
-  return null;
-}
-
 export async function importarGastosDesdeExcel(): Promise<{ importados: number; duplicados: number; dineroInicial: number | null }> {
   const resultado = await DocumentPicker.getDocumentAsync({
     type: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', '*/*'],
@@ -198,14 +76,25 @@ export async function importarGastosDesdeExcel(): Promise<{ importados: number; 
   // La librería xlsx tiene avisos de seguridad con archivos manipulados: se limita el tamaño y solo se abre lo que elige el usuario.
   if ((resultado.assets[0].size ?? 0) > 5 * 1024 * 1024) throw new Error('El archivo es demasiado grande (máximo 5 MB).');
 
+  const archivo = resultado.assets[0];
+  const esCsv = parecenCsv(archivo.name, archivo.mimeType);
   let libro: XLSX.WorkBook;
-  if (Platform.OS === 'web') {
-    const buffer = await (await fetch(resultado.assets[0].uri)).arrayBuffer();
+  if (esCsv) {
+    // Extractos del banco en CSV: se leen como texto (UTF-8 o Latin-1) y en crudo.
+    let bytes: Uint8Array;
+    if (Platform.OS === 'web') {
+      bytes = new Uint8Array(await (await fetch(archivo.uri)).arrayBuffer());
+    } else {
+      const b64 = await FileSystem.readAsStringAsync(archivo.uri, { encoding: FileSystem.EncodingType.Base64 });
+      const bin = atob(b64);
+      bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    }
+    libro = leerCsv(decodificarTexto(bytes));
+  } else if (Platform.OS === 'web') {
+    const buffer = await (await fetch(archivo.uri)).arrayBuffer();
     libro = XLSX.read(buffer, { type: 'array' });
   } else {
-    const base64 = await FileSystem.readAsStringAsync(resultado.assets[0].uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    const base64 = await FileSystem.readAsStringAsync(archivo.uri, { encoding: FileSystem.EncodingType.Base64 });
     libro = XLSX.read(base64, { type: 'base64' });
   }
 

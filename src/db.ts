@@ -3,7 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import * as SQLite from 'expo-sqlite';
-import { Gasto, NuevoGasto, Pendiente, Recurrente, Meta, Tipo, FondosIniciales, normalizar, fechaHoy, mesActual, mesDesplazado, claveRegla, leerFondos, sumaFondos, normalizarRecurrente } from './db-comun';
+import { Gasto, NuevoGasto, Pendiente, Recurrente, Meta, Tipo, FondosIniciales, normalizar, fechaHoy, mesActual, mesDesplazado, claveRegla, leerFondos, sumaFondos, normalizarRecurrente, normalizarMeta } from './db-comun';
 
 export * from './db-comun';
 
@@ -110,10 +110,16 @@ export function initDB() {
   anadirColumna('gastos', cg, 'importe_original', 'REAL');
   anadirColumna('gastos', cg, 'divisiones', "TEXT NOT NULL DEFAULT ''");
   anadirColumna('gastos', cg, 'foto', "TEXT NOT NULL DEFAULT ''");
+  anadirColumna('gastos', cg, 'cuenta', "TEXT NOT NULL DEFAULT 'banco'");
 
   const cr = columnas('recurrentes');
   anadirColumna('recurrentes', cr, 'cada', 'INTEGER NOT NULL DEFAULT 1');
   anadirColumna('recurrentes', cr, 'inicio', "TEXT NOT NULL DEFAULT ''");
+
+  const cm = columnas('metas');
+  anadirColumna('metas', cm, 'fecha', "TEXT NOT NULL DEFAULT ''");
+  anadirColumna('metas', cm, 'aporte', 'REAL NOT NULL DEFAULT 0');
+  anadirColumna('metas', cm, 'ultimaAporte', "TEXT NOT NULL DEFAULT ''");
 
   const cp = columnas('pendientes');
   anadirColumna('pendientes', cp, 'tipo', "TEXT NOT NULL DEFAULT 'gasto'");
@@ -130,9 +136,9 @@ export function getGastos(): Gasto[] {
 export function insertGasto(nuevo: NuevoGasto) {
   const g = normalizar(nuevo);
   db.runSync(
-    `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, foto)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    g.id, g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto
+    `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, foto, cuenta)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    g.id, g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta
   );
 }
 
@@ -140,15 +146,24 @@ export function updateGasto(nuevo: NuevoGasto) {
   const g = normalizar(nuevo);
   db.runSync(
     `UPDATE gastos SET descripcion = ?, categoria = ?, importe = ?, fecha = ?, tipo = ?, etiquetas = ?, moneda = ?,
-       importe_original = ?, divisiones = ?, foto = ? WHERE id = ?;`,
-    g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.id
+       importe_original = ?, divisiones = ?, foto = ?, cuenta = ? WHERE id = ?;`,
+    g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta, g.id
   );
 }
 
 /** Inserta o actualiza un gasto que viene de la nube (no toca la foto local). */
 export function upsertGastoLocal(g: NuevoGasto, extendido: boolean) {
   const n = normalizar(g);
-  if (extendido) {
+  if (extendido && g.cuenta) {
+    db.runSync(
+      `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, cuenta)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET descripcion=excluded.descripcion, categoria=excluded.categoria, importe=excluded.importe,
+         fecha=excluded.fecha, tipo=excluded.tipo, etiquetas=excluded.etiquetas, moneda=excluded.moneda,
+         importe_original=excluded.importe_original, divisiones=excluded.divisiones, cuenta=excluded.cuenta;`,
+      n.id, n.descripcion, n.categoria, n.importe, n.fecha, n.tipo, n.etiquetas, n.moneda, n.importe_original, n.divisiones, n.cuenta
+    );
+  } else if (extendido) {
     db.runSync(
       `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -358,18 +373,21 @@ export function deleteRecurrente(id: string) {
 // ───────────────────────── Metas de ahorro ─────────────────────────
 
 export function getMetas(): Meta[] {
-  return db.getAllSync<Meta>('SELECT * FROM metas ORDER BY nombre;');
+  return db.getAllSync<Meta>('SELECT * FROM metas ORDER BY nombre;').map(normalizarMeta);
 }
 
 export function insertMeta(m: Meta) {
   db.runSync(
-    'INSERT INTO metas (id, nombre, objetivo, ahorrado, icono) VALUES (?, ?, ?, ?, ?);',
-    m.id, m.nombre, m.objetivo, m.ahorrado, m.icono
+    'INSERT INTO metas (id, nombre, objetivo, ahorrado, icono, fecha, aporte, ultimaAporte) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+    m.id, m.nombre, m.objetivo, m.ahorrado, m.icono, m.fecha, m.aporte, m.ultimaAporte
   );
 }
 
 export function updateMeta(m: Meta) {
-  db.runSync('UPDATE metas SET nombre = ?, objetivo = ?, ahorrado = ?, icono = ? WHERE id = ?;', m.nombre, m.objetivo, m.ahorrado, m.icono, m.id);
+  db.runSync(
+    'UPDATE metas SET nombre = ?, objetivo = ?, ahorrado = ?, icono = ?, fecha = ?, aporte = ?, ultimaAporte = ? WHERE id = ?;',
+    m.nombre, m.objetivo, m.ahorrado, m.icono, m.fecha, m.aporte, m.ultimaAporte, m.id
+  );
 }
 
 export function deleteMeta(id: string) {

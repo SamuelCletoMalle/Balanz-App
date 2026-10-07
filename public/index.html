@@ -64,5 +64,13 @@
   <body>
     <noscript>Necesitas activar JavaScript para usar Balanz.</noscript>
     <div id="root"></div>
+    <script>
+      // Para poder abrir la app sin conexión (solo en HTTPS).
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>

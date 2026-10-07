@@ -8,7 +8,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '../components/Texto';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getGastos, leerDivisiones, Gasto } from '../db';
+import { getGastos, leerDivisiones, Gasto, Tipo } from '../db';
 import { guardarMovimiento } from '../movimientos';
 import { formatoEuro, formatoFecha, useTema } from '../tema';
 
@@ -49,7 +49,8 @@ export default function CompartidosScreen() {
         descripcion: deuda.gasto.descripcion,
         categoria: deuda.gasto.categoria,
         importe: deuda.gasto.importe,
-        tipo: deuda.gasto.tipo,
+        tipo: deuda.gasto.tipo as Tipo,
+        cuenta: deuda.gasto.cuenta,
         etiquetas: deuda.gasto.etiquetas,
         moneda: deuda.gasto.moneda,
         importe_original: deuda.gasto.importe_original,
@@ -73,7 +74,8 @@ export default function CompartidosScreen() {
           descripcion: g.descripcion,
           categoria: g.categoria,
           importe: g.importe,
-          tipo: g.tipo,
+          tipo: g.tipo as Tipo,
+          cuenta: g.cuenta,
           etiquetas: g.etiquetas,
           moneda: g.moneda,
           importe_original: g.importe_original,

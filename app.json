@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.balanz.app"
+      "bundleIdentifier": "app.balanz.mobile",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +18,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#4f46e5"
       },
-      "package": "com.balanz.app"
+      "package": "app.balanz.mobile",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -38,7 +40,9 @@
       "expo-notifications",
       [
         "expo-local-authentication",
-        { "faceIDPermission": "Balanz usa Face ID para proteger tus datos financieros." }
+        {
+          "faceIDPermission": "Balanz usa Face ID para proteger tus datos financieros."
+        }
       ],
       [
         "expo-image-picker",

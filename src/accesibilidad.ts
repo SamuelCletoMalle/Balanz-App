@@ -13,12 +13,14 @@ export type Preferencias = {
   tamanoTexto: TamanoTexto;
   altoContraste: boolean;
   reducirMovimiento: boolean;
+  /** Modo privado: los importes se ven como ••••. */
+  ocultarImportes: boolean;
 };
 
 export const ESCALAS: Record<TamanoTexto, number> = { normal: 1, grande: 1.2, muygrande: 1.4 };
 
 const CLAVE = 'balanz:accesibilidad';
-const POR_DEFECTO: Preferencias = { tema: 'sistema', tamanoTexto: 'normal', altoContraste: false, reducirMovimiento: false };
+const POR_DEFECTO: Preferencias = { tema: 'sistema', tamanoTexto: 'normal', altoContraste: false, reducirMovimiento: false, ocultarImportes: false };
 
 // Las preferencias son del dispositivo (no de la cuenta) para que también valgan en la pantalla de login.
 let actuales: Preferencias = { ...POR_DEFECTO };

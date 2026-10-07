@@ -13,9 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
 import { generarRecurrentes, detectarSuscripciones, textoVariacion, Sospechosa } from '../recurrentes';
-import { CATEGORIAS, infoCategoria, formatoEuro, useTema } from '../tema';
+import { getCategorias, infoCategoria, formatoEuro, useTema } from '../tema';
 
-const VACIO: Recurrente = { id: '', descripcion: '', categoria: CATEGORIAS[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
+const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
 
 export default function RecurrentesScreen() {
   const tema = useTema();
@@ -27,7 +27,7 @@ export default function RecurrentesScreen() {
   const [descripcion, setDescripcion] = useState('');
   const [importe, setImporte] = useState('');
   const [dia, setDia] = useState('1');
-  const [categoria, setCategoria] = useState(CATEGORIAS[0].nombre);
+  const [categoria, setCategoria] = useState(getCategorias()[0].nombre);
   const [tipo, setTipo] = useState<Tipo>('gasto');
   const [cada, setCada] = useState(1);
   const [mesPrimero, setMesPrimero] = useState(new Date().getMonth() + 1); // 1-12: mes del primer pago si no es mensual
@@ -266,7 +266,7 @@ export default function RecurrentesScreen() {
               </>
             ) : null}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {CATEGORIAS.map((c) => {
+              {getCategorias().map((c) => {
                 const activa = categoria === c.nombre;
                 return (
                   <TouchableOpacity accessibilityRole="button"

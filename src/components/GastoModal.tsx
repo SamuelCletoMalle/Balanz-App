@@ -10,9 +10,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
+import * as Clipboard from 'expo-clipboard';
+import { interpretarTexto } from '../captura';
 import { usePreferencias } from '../accesibilidad';
-import { CATEGORIAS, useTema } from '../tema';
-import { Tipo, Division, buscarRegla, leerDivisiones } from '../db';
+import { getCategorias, useTema } from '../tema';
+import NuevaCategoria from './NuevaCategoria';
+import { subirPerfil } from '../sync';
+import { Tipo, TipoMovimiento, Division, CUENTAS, buscarRegla, leerDivisiones } from '../db';
 import { MONEDAS, SIMBOLOS, convertirAEuros } from '../divisas';
 
 export type DatosGasto = {
@@ -20,6 +24,7 @@ export type DatosGasto = {
   categoria: string;
   importe: number; // EUR
   tipo: Tipo;
+  cuenta: string;
   etiquetas: string;
   moneda: string;
   importe_original: number | null;
@@ -31,7 +36,8 @@ export type InicialGasto = {
   descripcion: string;
   categoria: string;
   importe: number | null;
-  tipo?: Tipo;
+  tipo?: TipoMovimiento;
+  cuenta?: string;
   etiquetas?: string;
   moneda?: string;
   importe_original?: number | null;
@@ -47,6 +53,7 @@ type Props = {
   onGuardar: (datos: DatosGasto) => void;
   onCancelar: () => void;
   onEliminar?: () => void;
+  onDuplicar?: () => void;
   nota?: string;
 };
 
@@ -66,13 +73,16 @@ export default function GastoModal({
   onGuardar,
   onCancelar,
   onEliminar,
+  onDuplicar,
   nota,
 }: Props) {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const [tipo, setTipo] = useState<Tipo>('gasto');
   const [descripcion, setDescripcion] = useState('');
-  const [categoria, setCategoria] = useState(CATEGORIAS[0].nombre);
+  const [categoria, setCategoria] = useState(getCategorias()[0].nombre);
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
+  const [cuenta, setCuenta] = useState('banco');
   const [importe, setImporte] = useState('');
   const [moneda, setMoneda] = useState('EUR');
   const [etiquetas, setEtiquetas] = useState('');
@@ -85,9 +95,10 @@ export default function GastoModal({
   useEffect(() => {
     if (!visible) return;
     categoriaManual.current = !!inicial;
-    setTipo(inicial?.tipo ?? 'gasto');
+    setTipo(inicial?.tipo === 'ingreso' ? 'ingreso' : 'gasto');
+    setCuenta(inicial?.cuenta || 'banco');
     setDescripcion(inicial?.descripcion ?? '');
-    setCategoria(inicial?.categoria ?? CATEGORIAS[0].nombre);
+    setCategoria(inicial?.categoria ?? getCategorias()[0].nombre);
     setMoneda(inicial?.moneda ?? 'EUR');
     const base = inicial?.importe_original ?? inicial?.importe ?? null;
     setImporte(base != null && base > 0 ? base.toFixed(2).replace('.', ',') : '');
@@ -102,6 +113,25 @@ export default function GastoModal({
 
   const importeNum = parseFloat(importe.replace(',', '.'));
   const valido = descripcion.trim().length > 0 && isFinite(importeNum) && importeNum > 0 && !guardando;
+
+  // Rellena el formulario con el texto copiado: un SMS del banco, un ticket que se ha copiado con "Texto en vivo" / Google Lens…
+  const rellenarDesdePortapapeles = async () => {
+    try {
+      const texto = (await Clipboard.getStringAsync()).trim();
+      const c = interpretarTexto(texto);
+      if (!texto || c.importe === null) {
+        Alert.alert('No he encontrado un importe', 'Copia primero el texto del ticket o del SMS del banco (con el importe) y vuelve a pulsar.');
+        return;
+      }
+      setImporte(c.importe.toFixed(2).replace('.', ','));
+      if (c.comercio) setDescripcion(c.comercio);
+      setTipo(c.esIngreso ? 'ingreso' : 'gasto');
+      categoriaManual.current = true;
+      setCategoria(buscarRegla(c.comercio || '') ?? c.categoria);
+    } catch {
+      Alert.alert('No se pudo leer lo copiado', 'Prueba a copiar el texto otra vez.');
+    }
+  };
 
   const aplicarRegla = () => {
     if (categoriaManual.current) return;
@@ -153,6 +183,7 @@ export default function GastoModal({
       categoria,
       importe: euros,
       tipo,
+      cuenta,
       etiquetas: Array.from(new Set(tags)).join(','),
       moneda,
       importe_original: moneda === 'EUR' ? null : importeNum,
@@ -212,6 +243,10 @@ export default function GastoModal({
               ))}
             </ScrollView>
 
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Rellenar con el texto copiado" onPress={rellenarDesdePortapapeles} style={[styles.pegar, { backgroundColor: tema.tarjetaSuave }]}>
+              <Ionicons name="clipboard-outline" size={16} color={tema.primario} />
+              <Text style={{ color: tema.primario, fontSize: 13, fontWeight: '700' }}>Rellenar con lo que has copiado (ticket o SMS)</Text>
+            </TouchableOpacity>
             <TextInput
               style={[styles.input, { backgroundColor: tema.tarjetaSuave, color: tema.texto }]}
               placeholder={tipo === 'gasto' ? 'Descripción (ej. Mercadona)' : 'Origen (ej. Nómina)'}
@@ -222,7 +257,7 @@ export default function GastoModal({
             />
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {CATEGORIAS.map((c) => {
+              {getCategorias().map((c) => {
                 const activa = categoria === c.nombre;
                 return (
                   <TouchableOpacity accessibilityRole="button"
@@ -238,7 +273,43 @@ export default function GastoModal({
                   </TouchableOpacity>
                 );
               })}
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Crear una categoría nueva" onPress={() => setCreandoCategoria((v) => !v)} style={[styles.chip, { backgroundColor: tema.tarjetaSuave }]}>
+                <Ionicons name={creandoCategoria ? 'close' : 'add'} size={16} color={tema.primario} />
+                <Text style={[styles.chipTexto, { color: tema.primario }]}>Nueva</Text>
+              </TouchableOpacity>
             </ScrollView>
+            {creandoCategoria ? (
+              <NuevaCategoria
+                tema={tema}
+                onCreada={(nombre) => {
+                  categoriaManual.current = true;
+                  setCategoria(nombre);
+                  setCreandoCategoria(false);
+                  subirPerfil().catch(() => {});
+                }}
+                onCancelar={() => setCreandoCategoria(false)}
+              />
+            ) : null}
+
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>
+              {tipo === 'gasto' ? 'PAGADO DESDE' : 'INGRESADO EN'}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {CUENTAS.map((c) => {
+                const activa = cuenta === c.id;
+                return (
+                  <TouchableOpacity accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    key={c.id}
+                    onPress={() => setCuenta(c.id)}
+                    style={[styles.cuentaOpcion, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                  >
+                    <Ionicons name={c.icono} size={16} color={activa ? tema.primarioTexto : tema.textoSuave} />
+                    <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{c.nombre}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             <View style={[styles.campo, { backgroundColor: tema.tarjetaSuave }]}>
               <Ionicons name="pricetag-outline" size={18} color={tema.textoSuave} />
@@ -285,6 +356,11 @@ export default function GastoModal({
             </View>
 
             <View style={styles.botones}>
+              {onDuplicar ? (
+                <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.tarjetaSuave }]} accessibilityLabel="Duplicar con la fecha de hoy" onPress={onDuplicar}>
+                  <Ionicons name="copy-outline" size={20} color={tema.primario} />
+                </TouchableOpacity>
+              ) : null}
               {onEliminar ? (
                 <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.tarjetaSuave }]} accessibilityLabel="Eliminar" onPress={onEliminar}>
                   <Ionicons name="trash-outline" size={20} color={tema.peligro} />
@@ -326,6 +402,8 @@ const styles = StyleSheet.create({
   moneda: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 16, marginRight: 6 },
   input: { borderRadius: 14, padding: 14, fontSize: 16 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 22, marginRight: 8 },
+  pegar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, alignSelf: 'flex-start' },
+  cuentaOpcion: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 14 },
   chipTexto: { fontSize: 13, fontWeight: '600' },
   campo: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, paddingHorizontal: 14, height: 48 },
   campoInput: { flex: 1, fontSize: 14 },

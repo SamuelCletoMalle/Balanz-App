@@ -2,8 +2,13 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useDisposicion, arriba } from '../layout';
+import GraficoSaldo from '../components/GraficoSaldo';
+import { saldosPorCuenta } from '../cuentas';
+import { crearTraspaso } from '../movimientos';
+import { Alert } from '../dialogos';
+import { saldoPorMes, proyectarSaldo, comparativaMismoMes } from '../evolucion';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
@@ -22,10 +27,13 @@ import {
   getSaldoTotal,
   getFondosIniciales,
   sumaFondos,
+  mesActual,
+  NOMBRES_MES,
+  CUENTAS,
 } from '../db';
 import { proximosCobros, ProximoCobro } from '../recurrentes';
 import { comprobarPresupuestos } from '../avisos';
-import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
+import { getCategorias, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
 
 export default function ResumenScreen() {
   const { amplio } = useDisposicion();
@@ -44,6 +52,41 @@ export default function ResumenScreen() {
   const [meses, setMeses] = useState<{ mes: string; total: number; ingresos: number }[]>([]);
   const [cobros, setCobros] = useState<ProximoCobro[]>([]);
   const [cuentas, setCuentas] = useState({ inicial: 0, ingresos: 0, gastos: 0, saldo: 0 });
+  const [moviendo, setMoviendo] = useState(false);
+  const [origen, setOrigen] = useState<string>('banco');
+  const [destino, setDestino] = useState<string>('ahorros');
+  const [importeTraspaso, setImporteTraspaso] = useState('');
+  const saldosCuentas = useMemo(
+    () => saldosPorCuenta(getGastos(), getFondosIniciales()),
+    // se recalcula al volver a la pantalla (cuentas cambia en recargar)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cuentas]
+  );
+
+  const hacerTraspaso = () => {
+    const v = parseFloat(importeTraspaso.replace(',', '.'));
+    if (origen === destino) {
+      Alert.alert('Elige dos cuentas distintas', 'El dinero tiene que salir de una cuenta y entrar en otra.');
+      return;
+    }
+    if (!isFinite(v) || v <= 0) {
+      Alert.alert('Revisa el importe', 'Pon cuántos euros quieres mover.');
+      return;
+    }
+    crearTraspaso(origen, destino, Math.round(v * 100) / 100);
+    setMoviendo(false);
+    setImporteTraspaso('');
+    cargar();
+  };
+
+  const evolucion = useMemo(() => {
+    const todos = getGastos();
+    const inicial = sumaFondos(getFondosIniciales());
+    const reales = saldoPorMes(todos, inicial, mesActual(), 12);
+    return { puntos: [...reales, ...proyectarSaldo(reales, todos, 3)], comparativa: comparativaMismoMes(todos, mesActual()), hayDatos: todos.length > 0 };
+    // se recalcula al volver a la pantalla (cuentas cambia en recargar)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cuentas]);
   const [catEditando, setCatEditando] = useState<string | null>(null);
   const [valorCat, setValorCat] = useState('');
 
@@ -211,7 +254,7 @@ export default function ResumenScreen() {
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
         <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRESUPUESTO POR CATEGORÍA (toca para fijar)</Text>
-        {CATEGORIAS.map((cat) => {
+        {getCategorias().map((cat) => {
           const gasto = gastoCat(cat.nombre);
           const lim = presupuestos[cat.nombre];
           if (!lim && gasto === 0) {
@@ -264,6 +307,87 @@ export default function ResumenScreen() {
           );
         })}
       </View>
+
+      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>TUS CUENTAS</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={() => setMoviendo((v) => !v)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="swap-horizontal-outline" size={16} color={tema.primario} />
+            <Text style={{ color: tema.primario, fontWeight: '700', fontSize: 13 }}>{moviendo ? 'Cerrar' : 'Mover dinero'}</Text>
+          </TouchableOpacity>
+        </View>
+        {CUENTAS.map((c) => (
+          <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: tema.primario + '22', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={c.icono} size={18} color={tema.primario} />
+            </View>
+            <Text style={{ flex: 1, color: tema.texto, fontSize: 15, fontWeight: '600' }}>{c.nombre}</Text>
+            <Text style={{ color: saldosCuentas[c.id] >= 0 ? tema.texto : tema.peligro, fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+              {formatoEuro(saldosCuentas[c.id])}
+            </Text>
+          </View>
+        ))}
+        {moviendo ? (
+          <View style={{ gap: 10, backgroundColor: tema.tarjetaSuave, borderRadius: 16, padding: 12 }}>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>DE</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {CUENTAS.map((c) => (
+                <TouchableOpacity accessibilityRole="button" key={c.id} accessibilityState={{ selected: origen === c.id }} onPress={() => setOrigen(c.id)}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: origen === c.id ? tema.primario : tema.tarjeta }}>
+                  <Text style={{ color: origen === c.id ? tema.primarioTexto : tema.texto, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{c.nombre}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>A</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {CUENTAS.map((c) => (
+                <TouchableOpacity accessibilityRole="button" key={c.id} accessibilityState={{ selected: destino === c.id }} onPress={() => setDestino(c.id)}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: destino === c.id ? tema.primario : tema.tarjeta }}>
+                  <Text style={{ color: destino === c.id ? tema.primarioTexto : tema.texto, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{c.nombre}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              accessibilityLabel="Importe a mover en euros"
+              style={[styles.input, { backgroundColor: tema.tarjeta, color: tema.texto }]}
+              placeholder="Importe (€)"
+              placeholderTextColor={tema.textoSuave}
+              keyboardType="decimal-pad"
+              value={importeTraspaso}
+              onChangeText={setImporteTraspaso}
+            />
+            <TouchableOpacity accessibilityRole="button" onPress={hacerTraspaso} style={[styles.boton, { backgroundColor: tema.primario }]}>
+              <Text style={{ color: tema.primarioTexto, fontWeight: '700' }}>Mover dinero</Text>
+            </TouchableOpacity>
+            <Text style={{ color: tema.textoSuave, fontSize: 12 }}>Un traspaso no es un gasto ni un ingreso: tu saldo total no cambia.</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {evolucion.hayDatos ? (
+        <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>EVOLUCIÓN DEL SALDO</Text>
+          <GraficoSaldo tema={tema} puntos={evolucion.puntos} />
+          <Text style={{ color: tema.textoSuave, fontSize: 12 }}>
+            La línea discontinua es una previsión de los próximos 3 meses, siguiendo lo que ha cambiado tu saldo de media los últimos meses.
+          </Text>
+        </View>
+      ) : null}
+
+      {evolucion.comparativa.anioPasado > 0 ? (
+        <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>COMPARADO CON EL AÑO PASADO</Text>
+          <Text style={{ color: tema.texto, fontSize: 15, lineHeight: 22 }}>
+            Este mes llevas <Text style={{ fontWeight: '800' }}>{formatoEuro(evolucion.comparativa.actual)}</Text> en gastos. En {NOMBRES_MES[new Date().getMonth()]} del año pasado fueron{' '}
+            <Text style={{ fontWeight: '800' }}>{formatoEuro(evolucion.comparativa.anioPasado)}</Text>.
+          </Text>
+          {evolucion.comparativa.variacion !== null ? (
+            <Text style={{ color: evolucion.comparativa.variacion > 0 ? tema.peligro : tema.exito, fontWeight: '800', fontSize: 14 }}>
+              {evolucion.comparativa.variacion > 0 ? '▲' : '▼'} {Math.abs(Math.round(evolucion.comparativa.variacion))} % {evolucion.comparativa.variacion > 0 ? 'más' : 'menos'}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
         <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>ÚLTIMOS 6 MESES</Text>

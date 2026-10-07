@@ -12,7 +12,7 @@ import {
   mesDesplazado,
   getLimite,
 } from './db';
-import { formatoEuro, MESES_CORTOS } from './tema';
+import { formatoEuroReal as formatoEuro, MESES_CORTOS } from './tema';
 
 export type DatosInforme = {
   mes: string;

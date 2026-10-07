@@ -11,7 +11,9 @@ import { Alert } from '../dialogos';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
-import { getMetas, insertMeta, updateMeta, deleteMeta, Meta } from '../db';
+import { getMetas, insertMeta, updateMeta, deleteMeta, NOMBRES_MES, Meta } from '../db';
+import { aportacionNecesaria } from '../metas';
+import { parsearMes } from '../periodo';
 import { formatoEuro, useTema, IconoNombre } from '../tema';
 
 const ICONOS: IconoNombre[] = ['airplane-outline', 'home-outline', 'car-outline', 'laptop-outline', 'gift-outline', 'school-outline', 'shield-checkmark-outline', 'flag-outline'];
@@ -25,6 +27,8 @@ export default function MetasScreen() {
   const [nombre, setNombre] = useState('');
   const [objetivo, setObjetivo] = useState('');
   const [icono, setIcono] = useState<string>('flag-outline');
+  const [fechaTexto, setFechaTexto] = useState('');
+  const [aporteMensual, setAporteMensual] = useState('');
   const [aportando, setAportando] = useState<Meta | null>(null);
   const [aporte, setAporte] = useState('');
 
@@ -32,7 +36,9 @@ export default function MetasScreen() {
   useFocusEffect(recargar);
 
   const abrir = (m: Meta | null) => {
-    setEditando(m ?? { id: '', nombre: '', objetivo: 0, ahorrado: 0, icono: 'flag-outline' });
+    setEditando(m ?? { id: '', nombre: '', objetivo: 0, ahorrado: 0, icono: 'flag-outline', fecha: '', aporte: 0, ultimaAporte: '' });
+    setFechaTexto(m?.fecha ? `${m.fecha.slice(5, 7)}/${m.fecha.slice(0, 4)}` : '');
+    setAporteMensual(m?.aporte ? String(m.aporte).replace('.', ',') : '');
     setNombre(m?.nombre ?? '');
     setObjetivo(m ? String(m.objetivo).replace('.', ',') : '');
     setIcono(m?.icono ?? 'flag-outline');
@@ -45,7 +51,17 @@ export default function MetasScreen() {
       Alert.alert('Revisa los datos', 'Pon un nombre y un objetivo mayor que 0.');
       return;
     }
-    const meta = { ...editando, nombre: nombre.trim(), objetivo: obj, icono };
+    const fecha = fechaTexto.trim() ? parsearMes(fechaTexto) : '';
+    if (fecha === null) {
+      Alert.alert('Revisa la fecha', 'Escribe el mes y el año en que quieres tenerla, por ejemplo 06/2027.');
+      return;
+    }
+    const aporteNum = aporteMensual.trim() ? parseFloat(aporteMensual.replace(',', '.')) : 0;
+    if (!isFinite(aporteNum) || aporteNum < 0) {
+      Alert.alert('Revisa la aportación', 'Pon cuántos euros quieres sumar cada mes, o déjalo vacío.');
+      return;
+    }
+    const meta: Meta = { ...editando, nombre: nombre.trim(), objetivo: obj, icono, fecha, aporte: aporteNum };
     if (editando.id) updateMeta(meta);
     else insertMeta({ ...meta, id: Crypto.randomUUID() });
     setEditando(null);
@@ -123,6 +139,19 @@ export default function MetasScreen() {
                 <View style={[styles.barraFondo, { backgroundColor: tema.tarjetaSuave }]}>
                   <View style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 6, backgroundColor: completa ? tema.exito : tema.primario }} />
                 </View>
+                {!completa && (m.fecha || m.aporte > 0) ? (
+                  <View style={{ gap: 2 }}>
+                    {m.fecha ? (
+                      <Text style={{ color: tema.textoSuave, fontSize: 12 }}>
+                        Para {NOMBRES_MES[Number(m.fecha.slice(5, 7)) - 1]} de {m.fecha.slice(0, 4)}:{' '}
+                        {aportacionNecesaria(m) !== null ? `aparta ${formatoEuro(aportacionNecesaria(m) ?? 0)} al mes` : 'la fecha ya ha pasado'}
+                      </Text>
+                    ) : null}
+                    {m.aporte > 0 ? (
+                      <Text style={{ color: tema.exito, fontSize: 12, fontWeight: '700' }}>Se suman solos {formatoEuro(m.aporte)} cada mes</Text>
+                    ) : null}
+                  </View>
+                ) : null}
                 <View style={styles.fila}>
                   <Text style={{ color: tema.textoSuave, fontSize: 12, flex: 1 }}>
                     {completa ? '¡Meta conseguida! 🎉' : `Te faltan ${formatoEuro(m.objetivo - m.ahorrado)}`}
@@ -164,6 +193,29 @@ export default function MetasScreen() {
               value={objetivo}
               onChangeText={setObjetivo}
             />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                accessibilityLabel="Fecha objetivo, mes y año"
+                style={[styles.input, { backgroundColor: tema.tarjetaSuave, color: tema.texto, flex: 1 }]}
+                placeholder="Para cuándo (06/2027)"
+                placeholderTextColor={tema.textoSuave}
+                value={fechaTexto}
+                onChangeText={setFechaTexto}
+                autoCapitalize="none"
+              />
+              <TextInput
+                accessibilityLabel="Euros que se suman solos cada mes"
+                style={[styles.input, { backgroundColor: tema.tarjetaSuave, color: tema.texto, flex: 1 }]}
+                placeholder="Sumar al mes (€)"
+                placeholderTextColor={tema.textoSuave}
+                keyboardType="decimal-pad"
+                value={aporteMensual}
+                onChangeText={setAporteMensual}
+              />
+            </View>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, marginTop: -6 }}>
+              Con una fecha, te diré cuánto apartar cada mes. Con “sumar al mes”, esa cantidad se añade sola a la meta cada mes.
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {ICONOS.map((i) => (
                 <TouchableOpacity accessibilityRole="button"

@@ -4,6 +4,8 @@
  */
 import { useCallback, useState, useEffect } from 'react';
 import { useDisposicion, arriba } from '../layout';
+import { Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Switch, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { FondosForm, fondosATexto, textoAFondos } from '../components/Onboarding';
 import Presionable from '../components/Presionable';
@@ -15,6 +17,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { contarGastos, borrarTodosLosDatos, getReglas, getMetas, getRecurrentes, getFondosIniciales, setFondosIniciales, sumaFondos, getSaldoTotal } from '../db';
 import { exportarGastosAExcel, importarGastosDesdeExcel } from '../excel';
+import { exportarCopia, elegirYRestaurarCopia } from '../copia';
 import { supabase } from '../supabase';
 import { borrarTodosLosGastosDeLaNube, subirPerfil } from '../sync';
 import { activarAvisos, avisosActivados, pedirPermisoAvisos } from '../avisos';
@@ -238,6 +241,62 @@ export default function MasScreen() {
     }
   };
 
+  // Mensaje listo para mandar a la familia: se comparte con la hoja del móvil o, si no hay, se copia.
+  const invitar = async () => {
+    const enlace = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'https://balanz-app.vercel.app';
+    const mensaje =
+      'Familia, os paso una app para controlar el dinero: Balanz. Apuntáis lo que gastáis y lo que ingresáis y veis cuánto os queda. ' +
+      'Cada uno tiene su cuenta y nadie ve los datos de otro.\n\n' +
+      'Entrad aquí: ' + enlace + '\n' +
+      '1) Pulsad "Regístrate" con vuestro correo y una contraseña de mínimo 10 caracteres, con letras y números.\n' +
+      '2) Confirmad el correo que os llegará (mirad en spam).\n' +
+      '3) Para tenerla como app: en iPhone, Compartir → "Añadir a pantalla de inicio"; en Android, menú → "Instalar app".';
+    try {
+      const r = await Share.share({ message: mensaje });
+      if (r.action === Share.dismissedAction) return;
+    } catch {
+      await Clipboard.setStringAsync(mensaje);
+      Alert.alert('Mensaje copiado', 'Ya puedes pegarlo en WhatsApp o donde quieras.');
+    }
+  };
+
+  const hacerCopia = async () => {
+    setCargando(true);
+    try {
+      await exportarCopia();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo guardar la copia de seguridad.');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const restaurar = () =>
+    Alert.alert(
+      'Restaurar una copia',
+      'Elige un archivo de copia de Balanz. Lo que contiene se mezcla con lo que ya tienes: se añade lo que falta y se actualiza lo que coincide. No se borra nada.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Elegir archivo',
+          onPress: async () => {
+            setCargando(true);
+            try {
+              const r = await elegirYRestaurarCopia();
+              if (r) {
+                setNumGastos(contarGastos());
+                Alert.alert('Copia restaurada', `Movimientos: ${r.gastos}\nMetas: ${r.metas}\nRecurrentes: ${r.recurrentes}\nCategorías aprendidas: ${r.reglas}`);
+              }
+            } catch (e) {
+              Alert.alert('No se pudo restaurar', e instanceof Error ? e.message : 'El archivo no es válido.');
+            } finally {
+              setCargando(false);
+            }
+          },
+        },
+      ]
+    );
+
   const importar = async () => {
     setCargando(true);
     try {
@@ -292,6 +351,7 @@ export default function MasScreen() {
         <Fila tema={tema} icono="flag-outline" titulo="Metas de ahorro" detalle={`${cuentas.metas} metas`} onPress={() => router.push('/metas')} />
         <Fila tema={tema} icono="people-outline" titulo="Gastos compartidos" detalle="Quién te debe" onPress={() => router.push('/compartidos')} />
         <Fila tema={tema} icono="document-text-outline" titulo="Informe mensual" detalle="Comparativa y PDF" onPress={() => router.push('/informe')} />
+        <Fila tema={tema} icono="color-palette-outline" titulo="Mis categorías" detalle="Crea las tuyas: Mascotas, Regalos…" onPress={() => router.push('/categorias')} />
         <Fila tema={tema} icono="sparkles-outline" titulo="Categorías aprendidas" detalle={`${cuentas.reglas} comercios recordados`} onPress={() => router.push('/reglas')} ultimo />
       </View>
       </View>
@@ -334,6 +394,13 @@ export default function MasScreen() {
             { valor: 'oscuro', texto: 'Oscuro' },
           ]}
           onCambio={(v) => cambiarPreferencias({ tema: v })}
+        />
+        <Fila
+          tema={tema}
+          icono="eye-off-outline"
+          titulo="Modo privado"
+          detalle="Oculta los importes en pantalla (también con el ojo del saldo)"
+          derecha={<Switch accessibilityLabel="Modo privado" value={prefs.ocultarImportes} onValueChange={(v) => cambiarPreferencias({ ocultarImportes: v })} trackColor={{ true: tema.primario }} />}
         />
         <Fila
           tema={tema}
@@ -382,7 +449,9 @@ export default function MasScreen() {
         ) : (
           <>
             <Fila tema={tema} icono="download-outline" titulo="Exportar a Excel" onPress={exportar} />
-            <Fila tema={tema} icono="push-outline" titulo="Importar desde Excel" onPress={importar} ultimo />
+            <Fila tema={tema} icono="push-outline" titulo="Importar desde Excel o CSV" onPress={importar} />
+            <Fila tema={tema} icono="shield-checkmark-outline" titulo="Guardar copia de seguridad" detalle="Todo en un archivo: movimientos, metas, recurrentes…" onPress={hacerCopia} />
+            <Fila tema={tema} icono="refresh-outline" titulo="Restaurar una copia" onPress={restaurar} ultimo />
           </>
         )}
       </View>
@@ -391,6 +460,7 @@ export default function MasScreen() {
       <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>CUENTA</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
+        <Fila tema={tema} icono="people-circle-outline" titulo="Invitar a la familia" detalle="Manda el enlace y los pasos para registrarse" onPress={invitar} />
         <Fila tema={tema} icono="log-out-outline" titulo="Cerrar sesión" color={tema.peligro} onPress={cerrarSesion} />
         <Fila tema={tema} icono="trash-outline" titulo="Borrar todos los datos" color={tema.peligro} onPress={confirmarBorrado} ultimo />
       </View>

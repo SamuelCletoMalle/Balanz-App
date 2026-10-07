@@ -6,6 +6,19 @@
 
 export type Tipo = 'gasto' | 'ingreso';
 
+/** Un movimiento guardado puede ser además un traspaso entre cuentas (origen en `cuenta`, destino en `categoria`). */
+export type TipoMovimiento = Tipo | 'traspaso';
+
+export const CUENTAS = [
+  { id: 'efectivo', nombre: 'Efectivo', icono: 'cash-outline' },
+  { id: 'banco', nombre: 'Cuenta bancaria', icono: 'card-outline' },
+  { id: 'ahorros', nombre: 'Ahorros', icono: 'wallet-outline' },
+] as const;
+
+export type CuentaId = (typeof CUENTAS)[number]['id'];
+
+export const nombreCuenta = (id: string) => CUENTAS.find((x) => x.id === id)?.nombre ?? 'Cuenta bancaria';
+
 export type Division = { nombre: string; importe: number; pagado: boolean };
 
 export type Gasto = {
@@ -14,7 +27,8 @@ export type Gasto = {
   categoria: string;
   importe: number; // siempre en EUR
   fecha: string;
-  tipo: Tipo;
+  tipo: TipoMovimiento;
+  cuenta: string; // 'efectivo' | 'banco' | 'ahorros': de dónde sale o a dónde entra el dinero
   etiquetas: string; // "vacaciones,trabajo"
   moneda: string;
   importe_original: number | null;
@@ -87,11 +101,25 @@ export function textoFrecuencia(r: Recurrente): string {
   return `Día ${r.dia}, cada ${cada} meses${mesInicio ? ` (desde ${mesInicio})` : ''}`;
 }
 
-export type Meta = { id: string; nombre: string; objetivo: number; ahorrado: number; icono: string };
+export type Meta = {
+  id: string;
+  nombre: string;
+  objetivo: number;
+  ahorrado: number;
+  icono: string;
+  fecha: string; // 'YYYY-MM' en el que quieres tenerla lista ('' si no hay fecha)
+  aporte: number; // € que se suman solos cada mes (0 = sin aportación automática)
+  ultimaAporte: string; // 'YYYY-MM' del último mes ya sumado
+};
+
+export function normalizarMeta(m: Meta): Meta {
+  return { ...m, fecha: m.fecha ?? '', aporte: m.aporte > 0 ? m.aporte : 0, ultimaAporte: m.ultimaAporte ?? '' };
+}
 
 export function normalizar(g: NuevoGasto): Gasto {
   return {
     tipo: 'gasto',
+    cuenta: 'banco',
     etiquetas: '',
     moneda: 'EUR',
     importe_original: null,

@@ -5,6 +5,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View, ActivityIndicator, Platform } from 'react-native';
 import { useDisposicion } from '../layout';
+import { cargarCategoriasExtra } from '../categorias';
+import { vigilarErrores } from '../errores';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,12 +18,13 @@ import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
 import { descargarGastosDeLaNube, sincronizarCaptaciones, sincronizarPerfil } from '../sync';
 import { generarRecurrentes } from '../recurrentes';
+import { aplicarAportesAutomaticos } from '../metas';
 import { avisarPendientesNuevos, comprobarPresupuestos, pedirPermisoAvisos } from '../avisos';
 import { bloqueoActivado } from '../seguridad';
 import { useTema } from '../tema';
 import type { Session } from '@supabase/supabase-js';
 
-const OCULTAS = ['atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
+const OCULTAS = ['categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
 
 function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefined> {
   return Promise.race([promesa, new Promise<undefined>((resolver) => setTimeout(() => resolver(undefined), ms))]);
@@ -31,6 +34,10 @@ export default function RootLayout() {
   const tema = useTema();
   // En un ordenador (web ancha) el menú pasa a un lado y el contenido se centra con un ancho cómodo; en el móvil no cambia nada.
   const { escritorio, amplio } = useDisposicion();
+  useEffect(() => {
+    vigilarErrores();
+  }, []);
+
   // En la web, el color de la barra del navegador y el fondo de la página siguen al tema de la app.
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
@@ -64,6 +71,7 @@ export default function RootLayout() {
   const userId = session?.user.id ?? null;
   if (userId && userActivo.current !== userId) {
     usarBaseDeUsuario(userId);
+    cargarCategoriasExtra();
     userActivo.current = userId;
   }
 
@@ -100,6 +108,11 @@ export default function RootLayout() {
     const completo = async () => {
       await descargarGastosDeLaNube().catch(() => {});
       await generarRecurrentes().catch(() => 0);
+      try {
+        aplicarAportesAutomaticos();
+      } catch {
+        // las metas no deben impedir el arranque
+      }
       comprobarPresupuestos();
       await refrescar();
     };

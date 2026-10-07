@@ -9,16 +9,19 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
-import { getGastos, getTotalMesActual, getIngresosMesActual, getLimite, getEtiquetas, getSaldoTotal, Gasto } from '../db';
-import { usePreferencias } from '../accesibilidad';
+import { getGastos, getTotalMesActual, getIngresosMesActual, getLimite, getEtiquetas, getSaldoTotal, Gasto, nombreCuenta } from '../db';
+import { usePreferencias, cambiarPreferencias } from '../accesibilidad';
 import { CURVAS } from '../logo';
 import Presionable from '../components/Presionable';
 import { toque } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
-import { guardarMovimiento, eliminarMovimiento } from '../movimientos';
+import { guardarMovimiento, eliminarMovimiento, restaurarMovimiento, duplicarMovimiento } from '../movimientos';
 import { useDisposicion, arriba } from '../layout';
-import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, useTema, useEsOscuro } from '../tema';
+import { getCategorias, infoCategoria, formatoEuro, formatoFecha, useTema, useEsOscuro } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
+import Aviso from '../components/Aviso';
+import { Alert } from '../dialogos';
+import { Periodo, PERIODOS, rangoPeriodo } from '../periodo';
 
 const SALIDA = Easing.bezier(...CURVAS.salida);
 
@@ -26,7 +29,7 @@ export default function GastosScreen() {
   const tema = useTema();
   const { amplio } = useDisposicion();
   const [gastos, setGastos] = useState<Gasto[]>([]);
-  const { reducirMovimiento, altoContraste } = usePreferencias();
+  const { reducirMovimiento, altoContraste, ocultarImportes } = usePreferencias();
   const [saldo, setSaldo] = useState(0);
   const [totalMes, setTotalMes] = useState(0);
   const [ingresosMes, setIngresosMes] = useState(0);
@@ -38,6 +41,11 @@ export default function GastosScreen() {
   const [sincronizando, setSincronizando] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState<Periodo>('todo');
+  const [verFiltros, setVerFiltros] = useState(false);
+  const [desdeTexto, setDesdeTexto] = useState('');
+  const [hastaTexto, setHastaTexto] = useState('');
+  const [aviso, setAviso] = useState<{ texto: string; deshacer?: Gasto } | null>(null);
 
   const recargar = useCallback(() => {
     setGastos(getGastos());
@@ -67,22 +75,45 @@ export default function GastosScreen() {
     }, [recargar])
   );
 
-  const secciones = useMemo(() => {
+  const rango = useMemo(() => rangoPeriodo(periodo, new Date(), desdeTexto, hastaTexto), [periodo, desdeTexto, hastaTexto]);
+
+  const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    const filtrados = gastos.filter(
+    return gastos.filter(
       (g) =>
         (!filtro || g.categoria === filtro) &&
         (!filtroEtiqueta || g.etiquetas.split(',').includes(filtroEtiqueta)) &&
+        (!rango || (g.fecha >= rango.desde && g.fecha <= rango.hasta)) &&
         (!q || g.descripcion.toLowerCase().includes(q) || g.etiquetas.includes(q.replace('#', '')))
     );
+  }, [gastos, busqueda, filtro, filtroEtiqueta, rango]);
+
+  const hayFiltro = !!(filtro || filtroEtiqueta || rango || busqueda.trim());
+  const filtrosActivos = (filtro ? 1 : 0) + (filtroEtiqueta ? 1 : 0) + (periodo !== 'todo' ? 1 : 0);
+  const limpiarFiltros = () => {
+    setFiltro(null);
+    setFiltroEtiqueta(null);
+    setPeriodo('todo');
+    setDesdeTexto('');
+    setHastaTexto('');
+  };
+  const totalesFiltro = useMemo(
+    () => ({
+      gastos: filtrados.filter((g) => g.tipo === 'gasto').reduce((a, g) => a + g.importe, 0),
+      ingresos: filtrados.filter((g) => g.tipo === 'ingreso').reduce((a, g) => a + g.importe, 0),
+    }),
+    [filtrados]
+  );
+
+  const secciones = useMemo(() => {
     const porDia = new Map<string, Gasto[]>();
     filtrados.forEach((g) => porDia.set(g.fecha, [...(porDia.get(g.fecha) ?? []), g]));
     return Array.from(porDia.entries()).map(([fecha, data]) => ({
       fecha,
-      total: data.reduce((s, g) => s + (g.tipo === 'ingreso' ? g.importe : -g.importe), 0),
+      total: data.reduce((s, g) => s + (g.tipo === 'ingreso' ? g.importe : g.tipo === 'gasto' ? -g.importe : 0), 0),
       data,
     }));
-  }, [gastos, busqueda, filtro, filtroEtiqueta]);
+  }, [filtrados]);
 
   const porcentaje = limite > 0 ? Math.min(totalMes / limite, 1) : 0;
   // El saldo se lee en blanco sobre el degradado oscuro y en negro sobre uno claro, según el modo (o el del sistema).
@@ -99,6 +130,21 @@ export default function GastosScreen() {
   };
 
   const abrirEdicion = (g: Gasto) => {
+    if (g.tipo === 'traspaso') {
+      Alert.alert('Traspaso entre cuentas', `${g.descripcion} · ${formatoEuro(g.importe)}\nNo es un gasto ni un ingreso: solo mueve dinero de una cuenta a otra.`, [
+        { text: 'Cerrar', style: 'cancel' },
+        {
+          text: 'Borrar traspaso',
+          style: 'destructive',
+          onPress: () => {
+            eliminarMovimiento(g.id);
+            recargar();
+            setAviso({ texto: 'Traspaso borrado', deshacer: g });
+          },
+        },
+      ]);
+      return;
+    }
     setEditando(g);
     setModalVisible(true);
   };
@@ -111,9 +157,26 @@ export default function GastosScreen() {
 
   const eliminar = () => {
     if (!editando) return;
-    eliminarMovimiento(editando.id);
+    const borrado = editando;
+    eliminarMovimiento(borrado.id);
     recargar();
     setModalVisible(false);
+    setAviso({ texto: 'Movimiento borrado', deshacer: borrado });
+  };
+
+  const deshacer = () => {
+    if (!aviso?.deshacer) return;
+    restaurarMovimiento(aviso.deshacer);
+    recargar();
+    setAviso({ texto: 'Movimiento recuperado' });
+  };
+
+  const duplicar = () => {
+    if (!editando) return;
+    duplicarMovimiento(editando);
+    recargar();
+    setModalVisible(false);
+    setAviso({ texto: 'Duplicado con la fecha de hoy' });
   };
 
   const heroBloque = (
@@ -125,6 +188,15 @@ export default function GastosScreen() {
           style={styles.hero}
         >
           <View pointerEvents="none" style={styles.heroBrillo} />
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={ocultarImportes ? 'Mostrar los importes' : 'Ocultar los importes'}
+            onPress={() => cambiarPreferencias({ ocultarImportes: !ocultarImportes })}
+            hitSlop={12}
+            style={styles.heroOjo}
+          >
+            <Ionicons name={ocultarImportes ? 'eye-off-outline' : 'eye-outline'} size={22} color={tinta} />
+          </TouchableOpacity>
           <Text style={[styles.heroEtiqueta, { color: tinta }]}>
             Saldo total {sincronizando ? '· sincronizando…' : ''}
           </Text>
@@ -177,7 +249,7 @@ export default function GastosScreen() {
     const mes = new Date().toISOString().slice(0, 7);
     const sumas = new Map<string, number>();
     gastos.forEach((g) => {
-      if (g.tipo !== 'ingreso' && g.fecha.startsWith(mes)) sumas.set(g.categoria, (sumas.get(g.categoria) ?? 0) + g.importe);
+      if (g.tipo === 'gasto' && g.fecha.startsWith(mes)) sumas.set(g.categoria, (sumas.get(g.categoria) ?? 0) + g.importe);
     });
     const filas = Array.from(sumas.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
     return { filas, max: filas[0]?.[1] ?? 0 };
@@ -209,27 +281,44 @@ export default function GastosScreen() {
   );
 
   const cabecera = (
-    <View style={{ gap: 14, paddingBottom: 6 }}>
+    <View style={{ gap: 20, paddingBottom: 8 }}>
       {amplio ? null : heroBloque}
 
-      <View style={[styles.buscador, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}>
-        <Ionicons name="search-outline" size={18} color={tema.textoSuave} />
-        <TextInput
-          style={[styles.buscadorInput, { color: tema.texto }]}
-          placeholder="Buscar gasto"
-          placeholderTextColor={tema.textoSuave}
-          value={busqueda}
-          onChangeText={setBusqueda}
-        />
-        {busqueda ? (
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setBusqueda('')}>
-            <Ionicons name="close-circle" size={18} color={tema.textoSuave} />
-          </TouchableOpacity>
-        ) : null}
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+        <View style={[styles.buscador, { backgroundColor: tema.tarjeta, borderColor: tema.borde, flex: 1 }]}>
+          <Ionicons name="search-outline" size={18} color={tema.textoSuave} />
+          <TextInput
+            style={[styles.buscadorInput, { color: tema.texto }]}
+            placeholder="Buscar gasto"
+            placeholderTextColor={tema.textoSuave}
+            value={busqueda}
+            onChangeText={setBusqueda}
+          />
+          {busqueda ? (
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setBusqueda('')}>
+              <Ionicons name="close-circle" size={18} color={tema.textoSuave} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={verFiltros ? 'Ocultar filtros' : 'Mostrar filtros'}
+          accessibilityState={{ expanded: verFiltros }}
+          onPress={() => setVerFiltros((v) => !v)}
+          style={[styles.botonFiltros, { backgroundColor: verFiltros || filtrosActivos > 0 ? tema.primario : tema.tarjeta, borderColor: tema.borde }]}
+        >
+          <Ionicons name="options-outline" size={20} color={verFiltros || filtrosActivos > 0 ? tema.primarioTexto : tema.texto} />
+          {filtrosActivos > 0 ? (
+            <Text style={{ color: tema.primarioTexto, fontSize: 13, fontWeight: '800' }}>{filtrosActivos}</Text>
+          ) : null}
+        </TouchableOpacity>
       </View>
 
+      {verFiltros ? (
+      <View style={[styles.panelFiltros, { backgroundColor: tema.tarjeta }]}>
+      <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Categoría</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {CATEGORIAS.map((c) => {
+        {getCategorias().map((c) => {
           const activa = filtro === c.nombre;
           return (
             <TouchableOpacity accessibilityRole="button"
@@ -244,7 +333,50 @@ export default function GastosScreen() {
         })}
       </ScrollView>
 
+      <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Fecha</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {PERIODOS.map((p) => {
+          const activa = periodo === p.id;
+          return (
+            <TouchableOpacity accessibilityRole="button"
+              accessibilityState={{ selected: activa }}
+              key={p.id}
+              onPress={() => setPeriodo(p.id)}
+              style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjeta, borderColor: tema.borde }]}
+            >
+              <Ionicons name={p.id === 'todo' ? 'infinite-outline' : 'calendar-outline'} size={14} color={activa ? tema.primarioTexto : tema.textoSuave} />
+              <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 12, fontWeight: '600' }}>{p.nombre}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {periodo === 'personal' ? (
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TextInput
+            accessibilityLabel="Desde (día/mes/año)"
+            style={[styles.fechaInput, { backgroundColor: tema.tarjetaSuave, borderColor: tema.borde, color: tema.texto }]}
+            placeholder="Desde 1/3/2026"
+            placeholderTextColor={tema.textoSuave}
+            value={desdeTexto}
+            onChangeText={setDesdeTexto}
+            autoCapitalize="none"
+          />
+          <TextInput
+            accessibilityLabel="Hasta (día/mes/año)"
+            style={[styles.fechaInput, { backgroundColor: tema.tarjetaSuave, borderColor: tema.borde, color: tema.texto }]}
+            placeholder="Hasta 31/3/2026"
+            placeholderTextColor={tema.textoSuave}
+            value={hastaTexto}
+            onChangeText={setHastaTexto}
+            autoCapitalize="none"
+          />
+        </View>
+      ) : null}
+
       {etiquetasLista.length > 0 ? (
+        <>
+        <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Etiquetas</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {etiquetasLista.map((e) => {
             const activa = filtroEtiqueta === e;
@@ -259,8 +391,25 @@ export default function GastosScreen() {
             );
           })}
         </ScrollView>
+        </>
       ) : null}
 
+      {filtrosActivos > 0 ? (
+        <TouchableOpacity accessibilityRole="button" onPress={limpiarFiltros} style={{ alignSelf: 'flex-start', paddingVertical: 4 }}>
+          <Text style={{ color: tema.primario, fontSize: 14, fontWeight: '700' }}>Quitar filtros</Text>
+        </TouchableOpacity>
+      ) : null}
+      </View>
+      ) : null}
+
+      {hayFiltro ? (
+        <View style={[styles.resumenFiltro, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}>
+          <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '700' }}>{filtrados.length} movimientos</Text>
+          <Text style={{ color: tema.texto, fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+            Gastos {formatoEuro(totalesFiltro.gastos)} · Ingresos {formatoEuro(totalesFiltro.ingresos)}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 
@@ -328,8 +477,8 @@ export default function GastosScreen() {
                 },
               ]}
             >
-              <View style={[styles.icono, { backgroundColor: (item.tipo === 'ingreso' ? tema.exito : cat.color) + '22' }]}>
-                <Ionicons name={item.tipo === 'ingreso' ? 'arrow-down-circle-outline' : cat.icono} size={20} color={item.tipo === 'ingreso' ? tema.exito : cat.color} />
+              <View style={[styles.icono, { backgroundColor: (item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : cat.color) + '22' }]}>
+                <Ionicons name={item.tipo === 'traspaso' ? 'swap-horizontal-outline' : item.tipo === 'ingreso' ? 'arrow-down-circle-outline' : cat.icono} size={20} color={item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : cat.color} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -340,13 +489,14 @@ export default function GastosScreen() {
                   {item.foto ? <Ionicons name="image" size={13} color={tema.textoSuave} /> : null}
                 </View>
                 <Text style={[styles.categoria, { color: tema.textoSuave }]} numberOfLines={1}>
-                  {item.categoria}
+                  {item.tipo === 'traspaso' ? 'Traspaso entre cuentas' : item.categoria}
+                  {item.cuenta && item.cuenta !== 'banco' && item.tipo !== 'traspaso' ? ` · ${nombreCuenta(item.cuenta)}` : ''}
                   {item.etiquetas ? ` · ${item.etiquetas.split(',').map((e) => `#${e}`).join(' ')}` : ''}
                 </Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={[styles.importe, { color: item.tipo === 'ingreso' ? tema.exito : tema.texto }]}>
-                  {item.tipo === 'ingreso' ? '+' : '-'}
+                  {item.tipo === 'traspaso' ? '' : item.tipo === 'ingreso' ? '+' : '-'}
                   {formatoEuro(item.importe)}
                 </Text>
                 {item.moneda !== 'EUR' && item.importe_original ? (
@@ -376,6 +526,10 @@ export default function GastosScreen() {
         </Presionable>
       )}
 
+      {aviso ? (
+        <Aviso tema={tema} texto={aviso.texto} accion={aviso.deshacer ? 'Deshacer' : undefined} onAccion={deshacer} onCerrar={() => setAviso(null)} />
+      ) : null}
+
       <GastoModal
         visible={modalVisible}
         titulo={editando ? 'Editar movimiento' : 'Nuevo movimiento'}
@@ -383,6 +537,7 @@ export default function GastosScreen() {
         onGuardar={guardar}
         onCancelar={() => setModalVisible(false)}
         onEliminar={editando ? eliminar : undefined}
+        onDuplicar={editando ? duplicar : undefined}
       />
     </View>
   );
@@ -390,6 +545,9 @@ export default function GastosScreen() {
 
 const styles = StyleSheet.create({
   panel: { borderRadius: 24, padding: 18, gap: 14 },
+  heroOjo: { position: 'absolute', top: 16, right: 16, zIndex: 2, padding: 4 },
+  fechaInput: { flex: 1, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, fontSize: 16 },
+  resumenFiltro: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, gap: 8, flexWrap: 'wrap' },
   botonNuevo: { height: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   container: { flex: 1, paddingTop: arriba(60), paddingHorizontal: 16 },
   titulo: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8, marginBottom: 14 },
@@ -405,15 +563,18 @@ const styles = StyleSheet.create({
   heroBarraFondo: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.25)', overflow: 'hidden', marginTop: 6 },
   heroBarra: { height: '100%', borderRadius: 4 },
   heroPie: { fontSize: 13, fontWeight: '600', opacity: 0.85 },
-  buscador: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, paddingHorizontal: 12, height: 44 },
+  buscador: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, height: 48 },
+  botonFiltros: { minWidth: 48, height: 48, borderRadius: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12 },
+  panelFiltros: { borderRadius: 22, padding: 18, gap: 14 },
+  filtroTitulo: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: -4 },
   buscadorInput: { flex: 1, fontSize: 15 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, marginRight: 8, borderWidth: 1 },
-  diaCabecera: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 8, paddingHorizontal: 4 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 22, marginRight: 10, borderWidth: 1 },
+  diaCabecera: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 26, marginBottom: 10, paddingHorizontal: 6 },
   diaTexto: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  fila: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 16 },
   icono: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   descripcion: { fontSize: 16, fontWeight: '600' },
-  categoria: { fontSize: 12, marginTop: 2 },
+  categoria: { fontSize: 13, marginTop: 4 },
   importe: { fontSize: 16, fontWeight: '700' },
   vacio: { alignItems: 'center', gap: 10, paddingVertical: 50 },
   vacioTexto: { fontSize: 14, textAlign: 'center', paddingHorizontal: 30 },

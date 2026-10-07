@@ -19,15 +19,19 @@ import {
   getLimite,
   setLimite,
   leerFondos,
+  getPresupuestosCategoria,
+  setPresupuestoCategoria,
 } from './db';
+import { categoriasExtraJson, reemplazarCategoriasExtra } from './categorias';
 import { interpretarTexto } from './captura';
 
 const COLS_BASE = 'id, descripcion, categoria, importe, fecha';
 const COLS_EXT = `${COLS_BASE}, tipo, etiquetas, moneda, importe_original, divisiones`;
+const COLS_CUENTA = `${COLS_EXT}, cuenta`;
 
 // Si la nube todavía no tiene las columnas nuevas (migración SQL sin ejecutar) se sigue
 // sincronizando solo lo básico, sin romper nada.
-let nubeExtendida = true;
+let nubeNivel: 0 | 1 | 2 = 2;
 
 async function usuarioId(): Promise<string | null> {
   const { data } = await supabase.auth.getUser();
@@ -38,14 +42,19 @@ export async function descargarGastosDeLaNube(): Promise<void> {
   const userId = await usuarioId();
   if (!userId) return;
 
-  let extendido = true;
-  let res = await supabase.from('gastos').select(COLS_EXT).eq('user_id', userId);
+  // Según lo que tenga la tabla en la nube: 2 = con cuenta, 1 = con tipo/etiquetas/divisas, 0 = lo básico.
+  let nivel: 0 | 1 | 2 = 2;
+  let res = await supabase.from('gastos').select(COLS_CUENTA).eq('user_id', userId);
   if (res.error) {
-    extendido = false;
+    nivel = 1;
+    res = (await supabase.from('gastos').select(COLS_EXT).eq('user_id', userId)) as typeof res;
+  }
+  if (res.error) {
+    nivel = 0;
     res = (await supabase.from('gastos').select(COLS_BASE).eq('user_id', userId)) as typeof res;
   }
   if (res.error || !res.data) return;
-  nubeExtendida = extendido;
+  nubeNivel = nivel;
 
   (res.data as unknown as Record<string, unknown>[]).forEach((f) => {
     upsertGastoLocal(
@@ -55,7 +64,7 @@ export async function descargarGastosDeLaNube(): Promise<void> {
         categoria: f.categoria as string,
         importe: Number(f.importe),
         fecha: f.fecha as string,
-        ...(extendido
+        ...(nivel >= 1
           ? {
               tipo: (f.tipo as Gasto['tipo']) ?? 'gasto',
               etiquetas: (f.etiquetas as string) ?? '',
@@ -64,8 +73,9 @@ export async function descargarGastosDeLaNube(): Promise<void> {
               divisiones: (f.divisiones as string) ?? '',
             }
           : {}),
+        ...(nivel === 2 ? { cuenta: (f.cuenta as string) || 'banco' } : {}),
       },
-      extendido
+      nivel >= 1
     );
   });
 }
@@ -83,18 +93,24 @@ export async function subirGastoANube(nuevo: NuevoGasto): Promise<void> {
     importe: g.importe,
     fecha: g.fecha,
   };
+  const ext = {
+    ...base,
+    tipo: g.tipo,
+    etiquetas: g.etiquetas,
+    moneda: g.moneda,
+    importe_original: g.importe_original,
+    divisiones: g.divisiones,
+  };
 
-  if (nubeExtendida) {
-    const { error } = await supabase.from('gastos').upsert({
-      ...base,
-      tipo: g.tipo,
-      etiquetas: g.etiquetas,
-      moneda: g.moneda,
-      importe_original: g.importe_original,
-      divisiones: g.divisiones,
-    });
+  if (nubeNivel === 2) {
+    const { error } = await supabase.from('gastos').upsert({ ...ext, cuenta: g.cuenta });
     if (!error) return;
-    nubeExtendida = false;
+    nubeNivel = 1;
+  }
+  if (nubeNivel === 1) {
+    const { error } = await supabase.from('gastos').upsert(ext);
+    if (!error) return;
+    nubeNivel = 0;
   }
   await supabase.from('gastos').upsert(base);
 }
@@ -174,18 +190,40 @@ export async function subirTodosLosGastosLocales(): Promise<void> {
 // Se guarda también en la nube para no volver a pedir el alta en otro dispositivo.
 // Si la tabla `perfiles` no existe todavía (supabase/perfil.sql sin ejecutar), todo sigue funcionando en local.
 
+/** Ajustes que viajan con la cuenta: categorías propias y presupuestos por categoría. */
+function ajustesJson(): string {
+  return JSON.stringify({ categorias: JSON.parse(categoriasExtraJson()), presupuestos: getPresupuestosCategoria() });
+}
+
+function aplicarAjustes(raw: unknown) {
+  if (typeof raw !== 'string' || !raw) return;
+  try {
+    const a = JSON.parse(raw);
+    if (Array.isArray(a.categorias)) reemplazarCategoriasExtra(a.categorias);
+    if (a.presupuestos && typeof a.presupuestos === 'object') {
+      const remotos = a.presupuestos as Record<string, number>;
+      Object.keys(getPresupuestosCategoria()).forEach((k) => {
+        if (!(k in remotos)) setPresupuestoCategoria(k, null);
+      });
+      Object.entries(remotos).forEach(([k, v]) => Number(v) > 0 && setPresupuestoCategoria(k, Number(v)));
+    }
+  } catch {
+    // ajustes ilegibles: se ignoran
+  }
+}
+
 /**
- * Deja el perfil igual en todos los dispositivos: si la nube ya tiene uno, manda la nube (dinero inicial, límite);
- * si no tiene ninguno y este dispositivo ya hizo el alta, lo sube desde aquí.
+ * Deja el perfil igual en todos los dispositivos: si la nube ya tiene uno, manda la nube (dinero inicial, límite,
+ * categorías propias, presupuestos); si no tiene ninguno y este dispositivo ya hizo el alta, lo sube desde aquí.
  */
 export async function sincronizarPerfil(): Promise<void> {
   const userId = await usuarioId();
   if (!userId) return;
-  const { data, error } = await supabase
-    .from('perfiles')
-    .select('fondos, onboarding, limite')
-    .eq('user_id', userId)
-    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let res: any = await supabase.from('perfiles').select('fondos, onboarding, limite, ajustes').eq('user_id', userId).maybeSingle();
+  // Si la columna "ajustes" aún no existe en la nube, se sigue con lo básico.
+  if (res.error) res = await supabase.from('perfiles').select('fondos, onboarding, limite').eq('user_id', userId).maybeSingle();
+  const { data, error } = res;
   if (error) return;
   if (!data) {
     if (onboardingHecho()) await subirPerfil().catch(() => {});
@@ -195,16 +233,19 @@ export async function sincronizarPerfil(): Promise<void> {
   setFondosIniciales(leerFondos(data.fondos as string | null));
   const limite = Number(data.limite);
   if (limite > 0) setLimite(limite);
+  aplicarAjustes(data.ajustes);
   if (!onboardingHecho()) marcarOnboarding();
 }
 
 export async function subirPerfil(): Promise<void> {
   const userId = await usuarioId();
   if (!userId) return;
-  await supabase.from('perfiles').upsert({
+  const base = {
     user_id: userId,
     fondos: JSON.stringify(getFondosIniciales()),
     onboarding: true,
     limite: getLimite() || null,
-  });
+  };
+  const { error } = await supabase.from('perfiles').upsert({ ...base, ajustes: ajustesJson() });
+  if (error) await supabase.from('perfiles').upsert(base);
 }

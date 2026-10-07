@@ -36,16 +36,21 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 
 | | |
 |---|---|
-| 💸 **Movimientos** | Gastos e ingresos con categorías, etiquetas, varias divisas y foto del ticket. Buscador y filtros |
+| 💸 **Movimientos** | Gastos e ingresos con categorías, etiquetas, varias divisas y foto del ticket. Buscador, filtros por categoría, etiqueta y **fechas** (este mes, mes pasado, un rango…) con el total de lo filtrado. **Deshacer** al borrar y **duplicar** con un toque |
+| 🗂️ **Categorías propias** | Crea las tuyas (Mascotas, Regalos…) con icono y color; viajan con tu cuenta a todos tus dispositivos |
+| 🏧 **Cuentas y traspasos** | Efectivo, cuenta bancaria y ahorros, cada una con su saldo, y traspasos entre ellas sin que cuenten como gasto |
 | 🏦 **Saldo real** | Dinero inicial (efectivo, cuenta, ahorros) + ingresos − gastos, y opción de **ajustar el saldo disponible** a lo que tienes de verdad |
 | 🚀 **Alta inicial** | Recorrido guiado la primera vez: cuánto dinero tienes y un límite mensual opcional |
-| 📊 **Presupuestos** | Global y por categoría, con avisos al acercarte al límite |
-| 🎯 **Metas de ahorro** | Objetivos con progreso |
+| 📊 **Presupuestos** | Global y por categoría, con avisos al acercarte al límite y **avisos de ritmo** cuando gastas más deprisa de lo que da el mes. Gráfica de **evolución del saldo con previsión** y comparativa con el mismo mes del año pasado |
+| 🎯 **Metas de ahorro** | Objetivos con progreso, **fecha objetivo** (te dice cuánto apartar al mes) y aportación mensual automática |
 | 🔁 **Recurrentes** | Pagos fijos que se apuntan solos: cada mes, cada 2, 3, 4 o 6 meses, o cada año. Detecta suscripciones |
 | 👥 **Compartidos** | Gastos en grupo y reparto entre personas |
 | ⚡ **Captura automática** | Apple Pay y SMS del banco (iOS, con Atajos) y notificaciones (Android). Los pagos llegan a *Pendientes* para confirmarlos, o se **apuntan directamente**; la app aprende reglas de categorización |
 | 📄 **Informes** | Informe mensual exportable a PDF |
-| 📗 **Excel** | **Exporta** la contabilidad anual con formato fijo (hoja *Inicio* + una por mes) e **importa** ese mismo formato y tablas planas |
+| 📗 **Excel y CSV** | **Exporta** la contabilidad anual con formato fijo (hoja *Inicio* + una por mes). **Importa** ese formato, tablas planas y **extractos del banco** en CSV o Excel (importe con signo o columnas Cargo/Abono, separador `;`, Latin-1) |
+| 💾 **Copia de seguridad** | Todo en un archivo (movimientos, metas, recurrentes, reglas y ajustes) que se puede restaurar sin borrar nada |
+| 👁️ **Modo privado** | Un ojo en el saldo para ocultar los importes cuando enseñas el móvil |
+| 📲 **Funciona sin conexión** | La web instalada se abre aunque no haya internet (los datos ya viven en el dispositivo) |
 | 🔐 **Cuentas separadas** | Cada persona entra con su correo y solo ve sus datos, también entre dispositivos |
 | 👆 **Bloqueo biométrico** | Face ID / huella, que se vuelve a pedir tras un rato fuera de la app |
 | ♿ **Accesibilidad** | Tamaño de letra, alto contraste, reducir movimiento y etiquetas para lector de pantalla |
@@ -125,10 +130,16 @@ src/
   captura.ts              interpreta textos de pagos: importe, comercio, categoría, gasto o ingreso
   recurrentes.ts          generación automática de gastos fijos
   excel.ts                importación y exportación a Excel
+  excel-lectura.ts        lee libros por meses, tablas planas y extractos del banco (sin depender de la app)
   excel-contabilidad.ts   generador del libro anual con formato
+  categorias.ts, cuentas.ts, metas.ts, evolucion.ts, periodo.ts, copia.ts   lógica de cada función
+  errores.ts              aviso de errores a una tabla de Supabase (sin datos personales)
   informe.ts              informe mensual en PDF
   layout.ts               tamaños de la web: móvil, escritorio y pantalla ancha
   tema.ts                 modo claro / oscuro y accesibilidad
+tests/                    pruebas automáticas de la lógica (npm test)
+docs/PUBLICAR.md          guía para llevar la app a Google Play y App Store
+public/sw.js              service worker para abrir la web sin conexión
 supabase/                 scripts SQL: tablas, políticas RLS y funciones
 ```
 
@@ -159,6 +170,8 @@ mezclar datos. El dinero inicial y el límite viajan con la cuenta, así que otr
    2. `captaciones.sql`: token personal, bandeja de captura y columnas nuevas.
    3. `perfil.sql`: perfil sincronizado entre dispositivos.
    4. `movimientos.sql` *(opcional)*: apuntar directamente los pagos sin pasar por *Pendientes*.
+   5. `cuentas.sql`: cuentas (efectivo, banco, ahorros) y ajustes de la cuenta que viajan entre dispositivos.
+   6. `errores.sql` *(opcional)*: tabla donde llegan los avisos de errores de la app.
 2. Copia `.env.example` a `.env` y rellena la URL y la clave *publishable* de tu proyecto.
 3. Instala y arranca:
 
@@ -166,6 +179,7 @@ mezclar datos. El dinero inicial y el límite viajan con la cuenta, así que otr
 npm install
 npx expo start      # móvil con Expo Go
 npm run web         # navegador
+npm test            # pruebas automáticas de la lógica
 ```
 
 Para publicar la web: `npm run build:web` y desplegar la carpeta `dist` (hay un `vercel.json` listo).
@@ -183,9 +197,10 @@ En la app, **Más → Atajos, SMS y acceso rápido** muestra la URL, la clave y 
 - Contraseñas de 10 caracteres mínimo con letras y números, y confirmación de correo al registrarse.
 - La web se sirve con cabeceras de seguridad: HSTS, anti-iframe, `nosniff`, CSP y política de permisos.
 - Los datos viven en el dispositivo de cada usuario y en su propia cuenta de la nube.
-- **Limitaciones conocidas:** la base local del dispositivo no va cifrada (el bloqueo protege la pantalla, no el
-  archivo), y la librería `xlsx` tiene avisos de seguridad sin parche, por lo que solo abre archivos que elige el
-  usuario y con un límite de 5 MB.
+- La librería de Excel es la versión corregida del propio fabricante (`xlsx` 0.20.3), sin los avisos de seguridad de la
+  versión antigua, y solo abre archivos que elige el usuario, con un límite de 5 MB.
+- **Limitación conocida:** la base local del dispositivo no va cifrada (el bloqueo con Face ID protege la pantalla, no el
+  archivo). Cifrarla en móvil exige una compilación propia, no Expo Go.
 
 ## 🗺️ Próximos pasos
 
@@ -193,13 +208,14 @@ En la app, **Más → Atajos, SMS y acceso rápido** muestra la URL, la clave y 
 - [x] Sincronización en la nube y cuentas separadas
 - [x] Captura automática de pagos con apunte directo
 - [x] Importar y exportar la contabilidad en Excel
-- [ ] Publicar la app nativa en **Google Play**
-- [ ] Publicar la app nativa en **App Store**
-- [ ] Varias cuentas con saldo propio y transferencias entre ellas
+- [x] Categorías propias, cuentas con traspasos, metas con fecha y copia de seguridad
+- [x] Pruebas automáticas, funcionamiento sin conexión y aviso de errores
+- [ ] Publicar la app nativa en **Google Play** y **App Store** (la guía está en [`docs/PUBLICAR.md`](docs/PUBLICAR.md))
 - [ ] Notificaciones push reales cuando entra o sale dinero con la app cerrada
 - [ ] Conexión directa con el banco (Open Banking)
 - [ ] Cuentas de familia con un presupuesto compartido
-- [ ] Escaneo de tickets con OCR, widget de pantalla de inicio y modo privado para ocultar importes
+- [ ] Escaneo de tickets con OCR y widget de pantalla de inicio
+- [ ] Cuenta de familia compartida (un hogar con presupuesto común)
 - [ ] Añadir capturas de pantalla y un vídeo de demo a este README
 
 ## 👤 Autor y licencia

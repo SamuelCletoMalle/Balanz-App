@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { getConfig, setConfig, getLimite, getPresupuestosCategoria, getTotalMesActual, getGastosPorCategoriaMesActual, mesActual } from './db';
 import { formatoEuro } from './tema';
+import { ritmoExcesivo } from './evolucion';
 
 type ModuloNotificaciones = typeof import('expo-notifications');
 
@@ -100,9 +101,28 @@ export function comprobarPresupuestos() {
     );
   };
 
+  // Aviso temprano: se gasta más deprisa de lo que da el presupuesto (una vez por mes y partida).
+  const hoy = new Date();
+  const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+  const revisarRitmo = (clave: string, nombre: string, gastado: number, limite: number) => {
+    const veces = ritmoExcesivo(gastado, limite, hoy.getDate(), diasMes);
+    if (veces === null) return;
+    const marca = `ritmo:${mes}:${clave}`;
+    if (getConfig(marca)) return;
+    setConfig(marca, '1');
+    notificar(
+      `Vas muy deprisa con ${nombre}`,
+      `Llevas ${formatoEuro(gastado)} de ${formatoEuro(limite)} y vas ${veces} veces por encima del ritmo normal para este punto del mes.`
+    );
+  };
+
+  revisarRitmo('global', 'este mes', getTotalMesActual(), getLimite());
   revisar('global', 'este mes', getTotalMesActual(), getLimite());
   const presupuestos = getPresupuestosCategoria();
   getGastosPorCategoriaMesActual().forEach((c) => {
-    if (presupuestos[c.categoria]) revisar(`cat:${c.categoria}`, c.categoria, c.total, presupuestos[c.categoria]);
+    if (presupuestos[c.categoria]) {
+      revisarRitmo(`cat:${c.categoria}`, c.categoria, c.total, presupuestos[c.categoria]);
+      revisar(`cat:${c.categoria}`, c.categoria, c.total, presupuestos[c.categoria]);
+    }
   });
 }

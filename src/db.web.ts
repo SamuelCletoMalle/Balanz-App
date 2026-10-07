@@ -21,6 +21,7 @@ import {
   leerFondos,
   sumaFondos,
   normalizarRecurrente,
+  normalizarMeta,
 } from './db-comun';
 
 export * from './db-comun';
@@ -115,6 +116,7 @@ export function upsertGastoLocal(g: NuevoGasto, extendido: boolean) {
     Object.assign(previo, {
       descripcion: n.descripcion, categoria: n.categoria, importe: n.importe, fecha: n.fecha, tipo: n.tipo,
       etiquetas: n.etiquetas, moneda: n.moneda, importe_original: n.importe_original, divisiones: n.divisiones,
+      ...(g.cuenta ? { cuenta: n.cuenta } : {}),
     });
   } else {
     Object.assign(previo, { descripcion: n.descripcion, categoria: n.categoria, importe: n.importe, fecha: n.fecha });
@@ -301,7 +303,7 @@ export function deleteRecurrente(id: string) {
 // ───────────────────────── Metas de ahorro ─────────────────────────
 
 export function getMetas(): Meta[] {
-  return [...datos.metas].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  return datos.metas.map(normalizarMeta).sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
 export function insertMeta(m: Meta) {

@@ -4,12 +4,14 @@
  */
 import { useColorScheme } from 'react-native';
 import type { Ionicons } from '@expo/vector-icons';
-import { usePreferencias } from './accesibilidad';
+import { usePreferencias, getPreferencias } from './accesibilidad';
 
 export type IconoNombre = keyof typeof Ionicons.glyphMap;
 
 // Colores elegidos para que el texto blanco sobre ellos cumpla el contraste AA (4,5:1).
-export const CATEGORIAS: { nombre: string; icono: IconoNombre; color: string }[] = [
+export type Categoria = { nombre: string; icono: IconoNombre; color: string };
+
+export const CATEGORIAS_BASE: Categoria[] = [
   { nombre: 'Alimentación', icono: 'cart-outline', color: '#15803d' },
   { nombre: 'Transporte', icono: 'car-outline', color: '#1d4ed8' },
   { nombre: 'Suscripciones', icono: 'repeat-outline', color: '#7e22ce' },
@@ -18,8 +20,21 @@ export const CATEGORIAS: { nombre: string; icono: IconoNombre; color: string }[]
   { nombre: 'Vivienda', icono: 'home-outline', color: '#0f766e' },
   { nombre: 'Otros', icono: 'ellipsis-horizontal-circle-outline', color: '#475569' },
 ];
-export function infoCategoria(nombre: string) {
-  return CATEGORIAS.find((c) => c.nombre === nombre) ?? CATEGORIAS[CATEGORIAS.length - 1];
+// Categorías propias de la cuenta (se cargan desde categorias.ts). "Otros" siempre va la última.
+let categoriasExtra: Categoria[] = [];
+
+export function setCategoriasExtra(lista: Categoria[]) {
+  categoriasExtra = lista;
+}
+
+export function getCategorias(): Categoria[] {
+  const otros = CATEGORIAS_BASE[CATEGORIAS_BASE.length - 1];
+  return [...CATEGORIAS_BASE.slice(0, -1), ...categoriasExtra, otros];
+}
+
+export function infoCategoria(nombre: string): Categoria {
+  const todas = getCategorias();
+  return todas.find((c) => c.nombre === nombre) ?? todas[todas.length - 1];
 }
 
 const claro = {
@@ -97,7 +112,14 @@ export function useTema(): Tema {
   if (altoContraste) return oscuroActivo ? oscuroContraste : claroContraste;
   return oscuroActivo ? oscuro : claro;
 }
+/** Importe en euros. En modo privado se oculta (••••) para poder enseñar el móvil sin enseñar el dinero. */
 export function formatoEuro(n: number): string {
+  if (getPreferencias().ocultarImportes) return '•••• €';
+  return formatoEuroReal(n);
+}
+
+/** Igual, pero siempre con la cifra (informes y archivos que se exportan). */
+export function formatoEuroReal(n: number): string {
   return n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 }
 
