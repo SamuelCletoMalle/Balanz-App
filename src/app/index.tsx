@@ -2,32 +2,86 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, ReactNode } from 'react';
 import { View, SectionList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, TextInput } from '../components/Texto';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { getGastos, getTotalMesActual, getIngresosMesActual, getLimite, getEtiquetas, getSaldoTotal, Gasto, nombreCuenta } from '../db';
 import { usePreferencias, cambiarPreferencias } from '../accesibilidad';
 import { CURVAS } from '../logo';
 import Presionable from '../components/Presionable';
-import { toque } from '../haptics';
+import { toque, exito } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { guardarMovimiento, eliminarMovimiento, restaurarMovimiento, duplicarMovimiento } from '../movimientos';
 import { useDisposicion, arriba } from '../layout';
-import { getCategorias, infoCategoria, formatoEuro, formatoFecha, tintaCategoria, useTema } from '../tema';
+import { getCategorias, infoCategoria, formatoEuro, formatoFecha, tintaCategoria, useTema, Tema } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
 import Aviso from '../components/Aviso';
 import Logo from '../components/Logo';
 import { LOGO_CABECERA } from '../components/Intro';
 import { useIntroLista } from '../intro-estado';
-import { Chip, EstadoVacio, useContador, Barra } from '../components/ui';
+import { Chip, EstadoVacio, Esqueleto, useContador, Barra } from '../components/ui';
 import { Alert } from '../dialogos';
 import { Periodo, PERIODOS, rangoPeriodo } from '../periodo';
 
 const SALIDA = Easing.bezier(...CURVAS.salida);
+
+// Con el ratón, al soltar un arrastre se dispara también el clic de la fila; así se ignora justo después de deslizar.
+let deslizadoEn = 0;
+
+/**
+ * Fila que se desliza: hacia la derecha duplica (con la fecha de hoy) y hacia la izquierda borra.
+ * Al soltar pasado el umbral se ejecuta la acción y la fila vuelve a su sitio; borrar siempre se puede deshacer.
+ */
+function FilaDeslizable({ children, tema, onBorrar, onDuplicar }: { children: ReactNode; tema: Tema; onBorrar: () => void; onDuplicar?: () => void }) {
+  const ref = useRef<SwipeableMethods>(null);
+  return (
+    <ReanimatedSwipeable
+      ref={ref}
+      friction={2}
+      overshootLeft={false}
+      overshootRight={false}
+      leftThreshold={72}
+      rightThreshold={72}
+      renderLeftActions={
+        onDuplicar
+          ? () => (
+              <View style={[styles.accionFila, { backgroundColor: tema.acento }]}>
+                <Ionicons name="copy-outline" size={22} color={tema.acentoTexto} />
+              </View>
+            )
+          : undefined
+      }
+      renderRightActions={() => (
+        <View style={[styles.accionFila, { backgroundColor: tema.peligro }]}>
+          <Ionicons name="trash-outline" size={22} color="#ffffff" />
+        </View>
+      )}
+      onSwipeableOpenStartDrag={() => {
+        deslizadoEn = Date.now();
+      }}
+      onSwipeableCloseStartDrag={() => {
+        deslizadoEn = Date.now();
+      }}
+      onSwipeableWillOpen={() => {
+        deslizadoEn = Date.now();
+      }}
+      onSwipeableOpen={(direccion) => {
+        deslizadoEn = Date.now();
+        ref.current?.close();
+        exito();
+        if (direccion === 'left') onDuplicar?.();
+        else onBorrar();
+      }}
+    >
+      {children}
+    </ReanimatedSwipeable>
+  );
+}
 
 export default function GastosScreen() {
   const tema = useTema();
@@ -49,6 +103,9 @@ export default function GastosScreen() {
   const [filtro, setFiltro] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>('todo');
   const [verFiltros, setVerFiltros] = useState(false);
+  // El "+" gira 45° (queda como una "×") mientras la hoja de nuevo movimiento está abierta.
+  const giro = useSharedValue(0);
+  const estiloGiro = useAnimatedStyle(() => ({ transform: [{ rotate: `${giro.get() * 45}deg` }] }));
   const [desdeTexto, setDesdeTexto] = useState('');
   const [hastaTexto, setHastaTexto] = useState('');
   const [aviso, setAviso] = useState<{ texto: string; deshacer?: Gasto } | null>(null);
@@ -136,9 +193,25 @@ export default function GastosScreen() {
   const abrirNuevo = () => {
     setEditando(null);
     setModalVisible(true);
+    giro.set(withSpring(1, { duration: 320, dampingRatio: 0.7 }));
+  };
+  useEffect(() => {
+    if (!modalVisible) giro.set(withSpring(0, { duration: 320, dampingRatio: 0.8 }));
+  }, [modalVisible, giro]);
+
+  const borrarFila = (g: Gasto) => {
+    eliminarMovimiento(g.id);
+    recargar();
+    setAviso({ texto: g.tipo === 'traspaso' ? 'Traspaso borrado' : 'Movimiento borrado', deshacer: g });
+  };
+  const duplicarFila = (g: Gasto) => {
+    duplicarMovimiento(g);
+    recargar();
+    setAviso({ texto: 'Duplicado con la fecha de hoy' });
   };
 
   const abrirEdicion = (g: Gasto) => {
+    if (Date.now() - deslizadoEn < 450) return;
     if (g.tipo === 'traspaso') {
       Alert.alert('Traspaso entre cuentas', `${g.descripcion} · ${formatoEuro(g.importe)}\nNo es un gasto ni un ingreso: solo mueve dinero de una cuenta a otra.`, [
         { text: 'Cerrar', style: 'cancel' },
@@ -422,19 +495,32 @@ export default function GastosScreen() {
       <SectionList
         sections={secciones}
         keyExtractor={(g) => g.id}
-        stickySectionHeadersEnabled={false}
+        stickySectionHeadersEnabled
         ListHeaderComponent={cabecera}
         contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          gastos.length === 0 ? (
+          gastos.length === 0 && sincronizando ? (
+            <View style={{ backgroundColor: tema.tarjeta, borderRadius: 18, marginTop: 22 }} accessibilityLabel="Cargando movimientos">
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={styles.esqueletoFila}>
+                  <Esqueleto ancho={42} alto={42} radio={14} />
+                  <View style={{ flex: 1, gap: 8 }}>
+                    <Esqueleto ancho="55%" alto={14} />
+                    <Esqueleto ancho="30%" alto={11} />
+                  </View>
+                  <Esqueleto ancho={60} alto={16} />
+                </View>
+              ))}
+            </View>
+          ) : gastos.length === 0 ? (
             <EstadoVacio icono="receipt-outline" titulo="Aún no hay movimientos" texto="Apunta tu primer gasto con el botón +, o importa tu Excel desde Más." accion={{ texto: 'Añadir el primero', onPress: abrirNuevo }} />
           ) : (
             <EstadoVacio icono="funnel-outline" titulo="Nada con esos filtros" texto="Prueba a quitar alguno o a cambiar las fechas." accion={{ texto: 'Quitar filtros', onPress: limpiarFiltros }} />
           )
         }
         renderSectionHeader={({ section }) => (
-          <View style={styles.diaCabecera}>
+          <View style={[styles.diaCabecera, { backgroundColor: tema.fondo }]}>
             <Text style={[styles.diaTexto, { color: tema.textoSuave }]}>{formatoFecha(section.fecha)}</Text>
             <Text style={[styles.diaTexto, { color: tema.textoSuave }]}>{formatoEuro(section.total)}</Text>
           </View>
@@ -444,6 +530,7 @@ export default function GastosScreen() {
           const primero = index === 0;
           const ultimo = index === section.data.length - 1;
           return (
+            <FilaDeslizable tema={tema} onBorrar={() => borrarFila(item)} onDuplicar={item.tipo === 'traspaso' ? undefined : () => duplicarFila(item)}>
             <TouchableOpacity accessibilityRole="button"
               activeOpacity={0.7}
               onPress={() => abrirEdicion(item)}
@@ -489,6 +576,7 @@ export default function GastosScreen() {
                 ) : null}
               </View>
             </TouchableOpacity>
+            </FilaDeslizable>
           );
         }}
       />
@@ -505,7 +593,9 @@ export default function GastosScreen() {
             abrirNuevo();
           }}
         >
-          <Ionicons name="add" size={32} color={tema.primarioTexto} />
+          <Animated.View style={estiloGiro}>
+            <Ionicons name="add" size={32} color={tema.primarioTexto} />
+          </Animated.View>
         </Presionable>
       )}
 
@@ -553,7 +643,9 @@ const styles = StyleSheet.create({
   filtroTitulo: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: -4 },
   buscadorInput: { flex: 1, fontSize: 15 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 22, marginRight: 10, borderWidth: 1 },
-  diaCabecera: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 26, marginBottom: 10, paddingHorizontal: 6 },
+  diaCabecera: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 22, paddingBottom: 10, paddingHorizontal: 6 },
+  accionFila: { width: 88, alignItems: 'center', justifyContent: 'center' },
+  esqueletoFila: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   diaTexto: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   fila: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 16 },
   icono: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

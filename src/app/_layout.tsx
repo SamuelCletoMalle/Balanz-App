@@ -10,6 +10,7 @@ import { vigilarErrores } from '../errores';
 import { Tabs } from 'expo-router/js-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
@@ -235,10 +236,10 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       {contenido}
       <DisolverTema fondo={tema.fondo} />
       {intro && fuentesOk ? <Intro onFin={() => setIntro(false)} /> : null}
-    </View>
+    </GestureHandlerRootView>
   );
 }

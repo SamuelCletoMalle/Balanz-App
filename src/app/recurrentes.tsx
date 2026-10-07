@@ -4,7 +4,7 @@
  */
 import { useState, useCallback } from 'react';
 import { arriba } from '../layout';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, Switch, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
 import { Alert } from '../dialogos';
@@ -14,7 +14,7 @@ import * as Crypto from 'expo-crypto';
 import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
 import { generarRecurrentes, detectarSuscripciones, textoVariacion, Sospechosa } from '../recurrentes';
 import { getCategorias, infoCategoria, formatoEuro, useTema } from '../tema';
-import { Escalonado } from '../components/ui';
+import { Escalonado, Interruptor } from '../components/ui';
 
 const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
 
@@ -176,7 +176,7 @@ export default function RecurrentesScreen() {
                     {r.tipo === 'ingreso' ? '+' : '-'}
                     {formatoEuro(r.importe)}
                   </Text>
-                  <Switch accessibilityLabel={`${r.descripcion} activo`} value={!!r.activo} onValueChange={(v) => alternar(r, v)} trackColor={{ true: tema.primario }} />
+                  <Interruptor etiqueta={`${r.descripcion} activo`} valor={!!r.activo} onChange={(v) => alternar(r, v)} />
                 </TouchableOpacity>
               );
             })}

@@ -25,7 +25,7 @@ import { autenticar, biometriaDisponible, bloqueoActivado, guardarBloqueo } from
 import { useTema, Tema, IconoNombre, formatoEuro } from '../tema';
 import { cambiarPreferencias, usePreferencias, ModoTema, TamanoTexto } from '../accesibilidad';
 import type { Session } from '@supabase/supabase-js';
-import { Escalonado } from '../components/ui';
+import { Escalonado, Interruptor } from '../components/ui';
 
 function Fila({
   tema,
@@ -402,21 +402,21 @@ export default function MasScreen() {
           icono="eye-off-outline"
           titulo="Modo privado"
           detalle="Oculta los importes en pantalla (también con el ojo del saldo)"
-          derecha={<Switch accessibilityLabel="Modo privado" value={prefs.ocultarImportes} onValueChange={(v) => cambiarPreferencias({ ocultarImportes: v })} trackColor={{ true: tema.primario }} />}
+          derecha={<Interruptor etiqueta="Modo privado" valor={prefs.ocultarImportes} onChange={(v) => cambiarPreferencias({ ocultarImportes: v })} />}
         />
         <Fila
           tema={tema}
           icono="contrast-outline"
           titulo="Alto contraste"
           detalle="Colores y bordes más marcados"
-          derecha={<Switch accessibilityLabel="Alto contraste" value={prefs.altoContraste} onValueChange={(v) => cambiarPreferencias({ altoContraste: v })} trackColor={{ true: tema.primario }} />}
+          derecha={<Interruptor etiqueta="Alto contraste" valor={prefs.altoContraste} onChange={(v) => cambiarPreferencias({ altoContraste: v })} />}
         />
         <Fila
           tema={tema}
           icono="speedometer-outline"
           titulo="Reducir animaciones"
           detalle="Las ventanas aparecen sin deslizarse"
-          derecha={<Switch accessibilityLabel="Reducir animaciones" value={prefs.reducirMovimiento} onValueChange={(v) => cambiarPreferencias({ reducirMovimiento: v })} trackColor={{ true: tema.primario }} />}
+          derecha={<Interruptor etiqueta="Reducir animaciones" valor={prefs.reducirMovimiento} onChange={(v) => cambiarPreferencias({ reducirMovimiento: v })} />}
           ultimo
         />
       </View>
@@ -430,14 +430,14 @@ export default function MasScreen() {
           icono="finger-print-outline"
           titulo="Bloqueo con Face ID / huella"
           detalle="Se pide al abrir la app"
-          derecha={<Switch accessibilityLabel="Bloqueo con Face ID o huella" value={bloqueo} onValueChange={cambiarBloqueo} trackColor={{ true: tema.primario }} />}
+          derecha={<Interruptor etiqueta="Bloqueo con Face ID o huella" valor={bloqueo} onChange={cambiarBloqueo} />}
         />
         <Fila
           tema={tema}
           icono="notifications-outline"
           titulo="Notificaciones"
           detalle="Pagos detectados y avisos de presupuesto"
-          derecha={<Switch accessibilityLabel="Notificaciones" value={avisos} onValueChange={cambiarAvisos} trackColor={{ true: tema.primario }} />}
+          derecha={<Interruptor etiqueta="Notificaciones" valor={avisos} onChange={cambiarAvisos} />}
           ultimo
         />
       </View>
