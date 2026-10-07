@@ -33,6 +33,7 @@ export default function GastosScreen() {
   const tema = useTema();
   const { amplio } = useDisposicion();
   const introLista = useIntroLista();
+  const { escritorio } = useDisposicion();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const { reducirMovimiento, ocultarImportes } = usePreferencias();
   const [saldo, setSaldo] = useState(0);
@@ -394,9 +395,11 @@ export default function GastosScreen() {
   return (
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
       <Text style={[styles.titulo, { color: tema.texto }]}>Movimientos</Text>
-      <View pointerEvents="none" style={[styles.logoCabecera, { opacity: introLista ? 1 : 0 }]}>
-        <Logo size={LOGO_CABECERA.tamano} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
-      </View>
+      {escritorio ? null : (
+        <View pointerEvents="none" style={[styles.logoCabecera, { opacity: introLista ? 1 : 0 }]}>
+          <Logo size={LOGO_CABECERA.tamano} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
+        </View>
+      )}
 
       <View style={amplio ? { flex: 1, flexDirection: 'row', gap: 28 } : { flex: 1 }}>
         {amplio ? (

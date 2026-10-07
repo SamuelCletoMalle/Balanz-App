@@ -19,6 +19,8 @@ import LoginScreen from '../components/LoginScreen';
 import Bloqueo from '../components/Bloqueo';
 import Intro from '../components/Intro';
 import BarraInferior from '../components/BarraInferior';
+import BarraLateral from '../components/BarraLateral';
+import { DisolverTema } from '../components/ui';
 import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
 import { descargarGastosDeLaNube, sincronizarCaptaciones, sincronizarPerfil } from '../sync';
@@ -170,7 +172,7 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Tabs
           backBehavior="history"
-          tabBar={escritorio ? undefined : (props) => <BarraInferior {...props} />}
+          tabBar={(props) => (escritorio ? <BarraLateral {...props} /> : <BarraInferior {...props} />)}
           screenLayout={
             escritorio
               ? ({ children }) => (
@@ -235,6 +237,7 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1 }}>
       {contenido}
+      <DisolverTema fondo={tema.fondo} />
       {intro && fuentesOk ? <Intro onFin={() => setIntro(false)} /> : null}
     </View>
   );

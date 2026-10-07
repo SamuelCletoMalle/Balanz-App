@@ -261,6 +261,27 @@ export function Escalonado({ children, paso = 45 }: { children: ReactNode; paso?
   );
 }
 
+/**
+ * Al cambiar entre claro y oscuro (o a alto contraste) deja una capa con el color de fondo anterior que se desvanece,
+ * en vez de un cambio de golpe. Se coloca una sola vez, por encima de la app y por debajo de la intro.
+ */
+export function DisolverTema({ fondo }: { fondo: string }) {
+  const quieto = useQuieto();
+  const anterior = useRef(fondo);
+  const color = useSharedValue(fondo);
+  const opacidad = useSharedValue(0);
+  useEffect(() => {
+    if (anterior.current === fondo) return;
+    color.set(anterior.current);
+    anterior.current = fondo;
+    if (quieto) return;
+    opacidad.set(1);
+    opacidad.set(withTiming(0, { duration: 280, easing: SALIDA }));
+  }, [fondo, quieto, color, opacidad]);
+  const estilo = useAnimatedStyle(() => ({ backgroundColor: color.get(), opacity: opacidad.get() }));
+  return <Animated.View pointerEvents="none" style={[styles.disolver, estilo]} />;
+}
+
 /** Barra de progreso: se llena de izquierda a derecha al aparecer y cada vez que cambia el valor (0..1). */
 export function Barra({ p, color, radio = 7 }: { p: number; color: string; radio?: number }) {
   const quieto = useQuieto();
@@ -274,6 +295,7 @@ export function Barra({ p, color, radio = 7 }: { p: number; color: string; radio
 }
 
 const styles = StyleSheet.create({
+  disolver: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 },
   tarjeta: { borderRadius: RADIO.tarjeta, borderWidth: StyleSheet.hairlineWidth, padding: 18, gap: 14 },
   boton: { minHeight: 52, borderRadius: RADIO.boton, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIO.chip, borderWidth: 1 },

@@ -30,6 +30,8 @@ const MOVIMIENTO = Easing.bezier(...CURVAS.movimiento);
 
 /** Tamaño y margen del logo de la cabecera de Movimientos: aquí es donde aterriza la intro. */
 export const LOGO_CABECERA = { tamano: 36, margen: 16 };
+/** En escritorio aterriza en el logo de la barra lateral (esquina superior izquierda). */
+export const LOGO_LATERAL = { tamano: 38, x: 14 + 8 + 19, y: 28 + 19 };
 const TAMANO_INTRO = 200;
 const NOMBRE = 'Balanz'.split('');
 
@@ -78,11 +80,11 @@ export default function Intro({ onFin }: { onFin: () => void }) {
     onFin();
   };
 
-  // En el móvil y en ventanas estrechas el logo viaja a su sitio en la cabecera; en escritorio solo se funde.
-  const viaja = !escritorio;
-  const destinoX = width / 2 - LOGO_CABECERA.margen - LOGO_CABECERA.tamano / 2;
-  const destinoY = arriba(60) + 20 - height / 2;
-  const escalaFinal = LOGO_CABECERA.tamano / TAMANO_INTRO;
+  // El logo viaja hasta su sitio: la cabecera de Movimientos en el móvil, la barra lateral en escritorio.
+  const viaja = true;
+  const destinoX = escritorio ? LOGO_LATERAL.x - width / 2 : width / 2 - LOGO_CABECERA.margen - LOGO_CABECERA.tamano / 2;
+  const destinoY = escritorio ? LOGO_LATERAL.y - height / 2 : arriba(60) + 20 - height / 2;
+  const escalaFinal = (escritorio ? LOGO_LATERAL.tamano : LOGO_CABECERA.tamano) / TAMANO_INTRO;
 
   useEffect(() => {
     if (quieto) {

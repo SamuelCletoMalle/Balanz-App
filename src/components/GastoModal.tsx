@@ -11,6 +11,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
 import * as Clipboard from 'expo-clipboard';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { interpretarTexto } from '../captura';
 import { usePreferencias } from '../accesibilidad';
 import { getCategorias, useTema } from '../tema';
@@ -194,12 +197,35 @@ export default function GastoModal({
 
   const colorTipo = tipo === 'gasto' ? tema.peligro : tema.exito;
 
+  // La hoja se cierra arrastrando el asa hacia abajo: sigue al dedo y, al soltar, se va si hubo distancia o un empujón.
+  const arrastre = useSharedValue(0);
+  useEffect(() => {
+    if (visible) arrastre.set(0);
+  }, [visible, arrastre]);
+  const gesto = Gesture.Pan()
+    .onUpdate((e) => {
+      arrastre.set(Math.max(0, e.translationY));
+    })
+    .onEnd((e) => {
+      if (e.translationY > 120 || e.velocityY > 900) {
+        arrastre.set(withTiming(900, { duration: 200 }, (ok) => ok && scheduleOnRN(onCancelar)));
+      } else {
+        arrastre.set(withSpring(0, { duration: 300, dampingRatio: 0.8 }));
+      }
+    });
+  const estiloHoja = useAnimatedStyle(() => ({ transform: [{ translateY: arrastre.get() }] }));
+
   return (
     <Modal visible={visible} animationType={reducirMovimiento ? 'none' : 'slide'} transparent onRequestClose={onCancelar}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView style={styles.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity accessibilityRole="button" style={{ flex: 1 }} activeOpacity={1} onPress={onCancelar} />
-        <View style={[styles.hoja, { backgroundColor: tema.tarjeta }]}>
-          <View style={[styles.asa, { backgroundColor: tema.borde }]} />
+        <Animated.View style={[styles.hoja, { backgroundColor: tema.elevada }, estiloHoja]}>
+          <GestureDetector gesture={gesto}>
+            <View style={styles.zonaAsa} accessibilityLabel="Arrastra hacia abajo para cerrar">
+              <View style={[styles.asa, { backgroundColor: tema.borde }]} />
+            </View>
+          </GestureDetector>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
             <Text style={[styles.titulo, { color: tema.texto }]}>{titulo}</Text>
             {nota ? <Text style={[styles.nota, { color: tema.textoSuave }]}>{nota}</Text> : null}
@@ -382,8 +408,9 @@ export default function GastoModal({
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -391,7 +418,8 @@ export default function GastoModal({
 const styles = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   hoja: { padding: 20, paddingBottom: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '90%' },
-  asa: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, marginBottom: 12 },
+  zonaAsa: { alignSelf: 'stretch', alignItems: 'center', paddingTop: 2, paddingBottom: 12, marginTop: -8 },
+  asa: { width: 44, height: 5, borderRadius: 3 },
   titulo: { fontSize: 20, fontWeight: '800' },
   nota: { fontSize: 12, marginTop: -8 },
   segmento: { flexDirection: 'row', borderRadius: 14, padding: 4 },
