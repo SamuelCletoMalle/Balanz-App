@@ -5,18 +5,35 @@
 import { createContext, useContext } from 'react';
 import { Platform, StyleSheet, Text as TextoRN, TextInput as EntradaRN, TextProps, TextInputProps, TextStyle } from 'react-native';
 import { ESCALAS, usePreferencias } from '../accesibilidad';
+import { FUENTE } from '../tema';
 
 // Un texto dentro de otro texto hereda el tamaño del padre: solo se escala el de más arriba.
 const DentroDeTexto = createContext(false);
 
 const TAMANO_POR_DEFECTO = 14;
 
-function estiloEscalado(estilo: TextProps['style'], escala: number, anidado: boolean): TextProps['style'] {
-  if (escala === 1) return estilo;
-  const plano = (StyleSheet.flatten(estilo) ?? {}) as TextStyle;
-  if (plano.fontSize === undefined && anidado) return estilo;
+/**
+ * Elige la fuente de la marca según el peso y el tamaño que pide cada texto: Manrope para los títulos grandes,
+ * Inter para todo lo demás. Así las pantallas siguen escribiendo `fontWeight` y no hace falta tocarlas.
+ */
+function conFuente(plano: TextStyle): TextStyle {
+  if (plano.fontFamily) return plano;
+  const peso = plano.fontWeight === 'bold' ? 700 : Number(plano.fontWeight ?? 400) || 400;
   const tamano = plano.fontSize ?? TAMANO_POR_DEFECTO;
-  return { ...plano, fontSize: tamano * escala, ...(plano.lineHeight ? { lineHeight: plano.lineHeight * escala } : {}) };
+  let familia: string = FUENTE.normal;
+  if (tamano >= 24 && peso >= 700) familia = peso >= 800 ? FUENTE.titulo : FUENTE.subtitulo;
+  else if (peso >= 700) familia = FUENTE.negrita;
+  else if (peso >= 600) familia = FUENTE.semi;
+  else if (peso >= 500) familia = FUENTE.medio;
+  // Con la fuente ya en negrita no se vuelve a pedir peso: evitaría una negrita sintética encima.
+  return { ...plano, fontFamily: familia, fontWeight: 'normal' };
+}
+
+function estiloEscalado(estilo: TextProps['style'], escala: number, anidado: boolean): TextProps['style'] {
+  const plano = (StyleSheet.flatten(estilo) ?? {}) as TextStyle;
+  if (escala === 1 || (plano.fontSize === undefined && anidado)) return conFuente(plano);
+  const tamano = plano.fontSize ?? TAMANO_POR_DEFECTO;
+  return conFuente({ ...plano, fontSize: tamano * escala, ...(plano.lineHeight ? { lineHeight: plano.lineHeight * escala } : {}) });
 }
 
 /** `Text` que respeta el tamaño de letra elegido en Más → Accesibilidad. */

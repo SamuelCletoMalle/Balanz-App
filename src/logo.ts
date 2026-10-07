@@ -2,17 +2,20 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-// Geometría del logo de Balanz (rejilla 100x100). La "B" se construye con tres trazos redondeados:
-// un tallo y dos medios aros —como los platos de una balanza— más una moneda como acento.
+// Geometría del logo de Balanz (rejilla 100x100). La "Z" de Balanz se construye con tres trazos redondeados
+// (barra de arriba, diagonal y barra de abajo) y una moneda en el centro, que hace de pivote de la balanza.
 // Si se cambia algo aquí, hay que regenerar los iconos (ver README).
 
+const BARRA = 46;
+const DIAGONAL = Math.hypot(46, 42);
+
 export const LOGO = {
-  trazo: 11,
-  tallo: { d: 'M34 24 V76', largo: 52 },
-  arriba: { d: 'M34 24 H48 A13 13 0 0 1 48 50 H34', largo: 14 + Math.PI * 13 + 14 },
-  abajo: { d: 'M34 50 H51 A13 13 0 0 1 51 76 H34', largo: 17 + Math.PI * 13 + 17 },
-  moneda: { cx: 72, cy: 25, r: 5.5 },
-  colores: { inicio: '#6366f1', fin: '#7c3aed', marca: '#ffffff', marcaFin: '#e0e7ff', moneda: '#fbbf24' },
+  trazo: 9,
+  barraArriba: { d: 'M27 29 H73', largo: BARRA },
+  diagonal: { d: 'M73 29 L27 71', largo: DIAGONAL },
+  barraAbajo: { d: 'M27 71 H73', largo: BARRA },
+  moneda: { cx: 50, cy: 50, r: 8, hueco: 11.5 },
+  colores: { inicio: '#18181b', fin: '#000000', marca: '#bef264', moneda: '#ffffff', aro: '#0a0a0a' },
 } as const;
 
 // Curvas de la guía de animación (salida fuerte para entradas, ease-in-out para movimiento en pantalla).

@@ -6,7 +6,7 @@
 // - Páginas: primero la red (para tener siempre la versión nueva) y, si no hay conexión, la última guardada.
 // - Archivos con nombre único (/_expo/static, iconos, fuentes): primero lo guardado, porque no cambian.
 // - Nada de otros dominios (Supabase) ni peticiones que no sean GET.
-const VERSION = 'balanz-v2';
+const VERSION = 'balanz-v3';
 const BASICOS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (evento) => {

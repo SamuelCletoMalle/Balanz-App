@@ -27,7 +27,7 @@ const MOVIMIENTO = Easing.bezier(...CURVAS.movimiento);
 
 /**
  * Pantalla de entrada (ocurre una vez por arranque, así que cabe una animación con calma):
- * la "B" se dibuja trazo a trazo, la moneda cae en su sitio y la marca sube para dejar paso al nombre.
+ * la "Z" se dibuja trazo a trazo, la moneda cae en su sitio y la marca sube para dejar paso al nombre.
  * Un toque la salta. Con "reducir animaciones" solo se ve la marca quieta unos instantes.
  */
 export default function Intro({ onFin }: { onFin: () => void }) {
@@ -35,9 +35,9 @@ export default function Intro({ onFin }: { onFin: () => void }) {
   const { reducirMovimiento } = usePreferencias();
   const quieto = sistemaReduce || reducirMovimiento;
 
-  const tallo = useSharedValue(quieto ? 1 : 0);
-  const arriba = useSharedValue(quieto ? 1 : 0);
-  const abajo = useSharedValue(quieto ? 1 : 0);
+  const barraArriba = useSharedValue(quieto ? 1 : 0);
+  const diagonal = useSharedValue(quieto ? 1 : 0);
+  const barraAbajo = useSharedValue(quieto ? 1 : 0);
   const moneda = useSharedValue(quieto ? 1 : 0);
   const subida = useSharedValue(quieto ? 1 : 0);
   const nombre = useSharedValue(quieto ? 1 : 0);
@@ -68,9 +68,9 @@ export default function Intro({ onFin }: { onFin: () => void }) {
       salir(700, 200);
       return;
     }
-    tallo.set(withDelay(80, withTiming(1, { duration: 350, easing: SALIDA })));
-    arriba.set(withDelay(230, withTiming(1, { duration: 420, easing: SALIDA })));
-    abajo.set(withDelay(420, withTiming(1, { duration: 460, easing: SALIDA })));
+    barraArriba.set(withDelay(80, withTiming(1, { duration: 350, easing: SALIDA })));
+    diagonal.set(withDelay(230, withTiming(1, { duration: 420, easing: SALIDA })));
+    barraAbajo.set(withDelay(420, withTiming(1, { duration: 460, easing: SALIDA })));
     // La moneda cae con un pequeño rebote: es el único momento "físico" de toda la secuencia.
     moneda.set(withDelay(860, withSpring(1, { duration: 450, dampingRatio: 0.55, reduceMotion: ReduceMotion.Never })));
     subida.set(withDelay(1000, withTiming(1, { duration: 450, easing: MOVIMIENTO })));
@@ -105,10 +105,10 @@ export default function Intro({ onFin }: { onFin: () => void }) {
       <Pressable style={StyleSheet.absoluteFill} onPress={saltar} accessibilityLabel="Saltar la introducción" />
       <View pointerEvents="none" style={styles.centro}>
         <Animated.View style={[styles.brillo, estiloBrillo]}>
-          <Halo size={560} />
+          <Halo size={560} color="#bef264" intensidad={0.22} />
         </Animated.View>
         <Animated.View style={estiloMarca}>
-          <Logo size={200} progreso={{ tallo, arriba, abajo, moneda }} />
+          <Logo size={200} progreso={{ barraArriba, diagonal, barraAbajo, moneda }} />
         </Animated.View>
         <Animated.View style={[styles.bloqueTexto, estiloNombre]}>
           <Text style={styles.nombre}>Balanz</Text>
@@ -122,11 +122,11 @@ export default function Intro({ onFin }: { onFin: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  raiz: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#0b1020', zIndex: 100 },
+  raiz: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#09090b', zIndex: 100 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   brillo: { position: 'absolute', marginTop: -60 },
   bloqueTexto: { position: 'absolute', top: '50%', marginTop: 86 },
   bloqueLema: { position: 'absolute', top: '50%', marginTop: 152 },
   nombre: { color: '#ffffff', fontSize: 40, fontWeight: '800', letterSpacing: -1.2, textAlign: 'center' },
-  lema: { color: '#a3b1c6', fontSize: 15, letterSpacing: 0.2, textAlign: 'center' },
+  lema: { color: '#a1a1aa', fontSize: 15, letterSpacing: 0.2, textAlign: 'center' },
 });

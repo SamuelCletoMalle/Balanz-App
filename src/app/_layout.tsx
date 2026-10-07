@@ -9,6 +9,10 @@ import { cargarCategoriasExtra } from '../categorias';
 import { vigilarErrores } from '../errores';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../supabase';
 import LoginScreen from '../components/LoginScreen';
@@ -24,6 +28,9 @@ import { bloqueoActivado } from '../seguridad';
 import { useTema } from '../tema';
 import type { Session } from '@supabase/supabase-js';
 
+// El splash nativo se queda hasta que las fuentes están listas, para que no haya un salto de tipografía.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 const OCULTAS = ['categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
 
 function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefined> {
@@ -32,6 +39,11 @@ function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefi
 
 export default function RootLayout() {
   const tema = useTema();
+  const [fuentesListas, errorFuentes] = useFonts({ Manrope_700Bold, Manrope_800ExtraBold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const fuentesOk = fuentesListas || !!errorFuentes;
+  useEffect(() => {
+    if (fuentesOk) SplashScreen.hideAsync().catch(() => {});
+  }, [fuentesOk]);
   // En un ordenador (web ancha) el menú pasa a un lado y el contenido se centra con un ancho cómodo; en el móvil no cambia nada.
   const { escritorio, amplio } = useDisposicion();
   useEffect(() => {
@@ -141,7 +153,7 @@ export default function RootLayout() {
   );
 
   let contenido;
-  if (cargando) {
+  if (cargando || !fuentesOk) {
     contenido = cargandoVista;
   } else if (!session) {
     contenido = <LoginScreen />;
@@ -219,7 +231,7 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1 }}>
       {contenido}
-      {intro ? <Intro onFin={() => setIntro(false)} /> : null}
+      {intro && fuentesOk ? <Intro onFin={() => setIntro(false)} /> : null}
     </View>
   );
 }

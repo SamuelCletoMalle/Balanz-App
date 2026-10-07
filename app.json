@@ -16,7 +16,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
-        "backgroundColor": "#4f46e5"
+        "backgroundColor": "#09090b"
       },
       "package": "app.balanz.mobile",
       "versionCode": 1
@@ -33,7 +33,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
-          "backgroundColor": "#0b1020"
+          "backgroundColor": "#09090b"
         }
       ],
       "expo-sharing",
