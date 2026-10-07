@@ -20,6 +20,7 @@ import {
   FondosIniciales,
   leerFondos,
   sumaFondos,
+  normalizarRecurrente,
 } from './db-comun';
 
 export * from './db-comun';
@@ -274,7 +275,7 @@ export function deletePendiente(id: string) {
 // ───────────────────────── Gastos recurrentes ─────────────────────────
 
 export function getRecurrentes(): Recurrente[] {
-  return [...datos.recurrentes].sort((a, b) => a.dia - b.dia || a.descripcion.localeCompare(b.descripcion));
+  return datos.recurrentes.map(normalizarRecurrente).sort((a, b) => a.dia - b.dia || a.descripcion.localeCompare(b.descripcion));
 }
 
 export function insertRecurrente(r: Recurrente) {

@@ -3,7 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useState, useEffect } from 'react';
-import { useDisposicion } from '../layout';
+import { useDisposicion, arriba } from '../layout';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Switch, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { FondosForm, fondosATexto, textoAFondos } from '../components/Onboarding';
 import Presionable from '../components/Presionable';
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   modalFondo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   hoja: { padding: 20, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28, gap: 14 },
   botonHoja: { minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
+  container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
   titulo: { fontSize: 32, fontWeight: '800', marginBottom: 6 },
   rejilla: { display: 'block', columnCount: 2, columnGap: 14 } as object,
   perfil: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 22 },

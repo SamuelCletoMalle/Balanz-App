@@ -3,6 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback } from 'react';
+import { arriba } from '../layout';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
@@ -10,11 +11,11 @@ import { Alert } from '../dialogos';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
-import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, Recurrente, Tipo } from '../db';
+import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
 import { generarRecurrentes, detectarSuscripciones, textoVariacion, Sospechosa } from '../recurrentes';
 import { CATEGORIAS, infoCategoria, formatoEuro, useTema } from '../tema';
 
-const VACIO: Recurrente = { id: '', descripcion: '', categoria: CATEGORIAS[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1 };
+const VACIO: Recurrente = { id: '', descripcion: '', categoria: CATEGORIAS[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
 
 export default function RecurrentesScreen() {
   const tema = useTema();
@@ -28,6 +29,8 @@ export default function RecurrentesScreen() {
   const [dia, setDia] = useState('1');
   const [categoria, setCategoria] = useState(CATEGORIAS[0].nombre);
   const [tipo, setTipo] = useState<Tipo>('gasto');
+  const [cada, setCada] = useState(1);
+  const [mesPrimero, setMesPrimero] = useState(new Date().getMonth() + 1); // 1-12: mes del primer pago si no es mensual
 
   const recargar = useCallback(() => {
     setLista(getRecurrentes());
@@ -43,6 +46,8 @@ export default function RecurrentesScreen() {
     setDia(String(r.dia));
     setCategoria(r.categoria);
     setTipo(r.tipo);
+    setCada(r.cada >= 1 ? r.cada : 1);
+    setMesPrimero(r.inicio ? Number(r.inicio.slice(5, 7)) : new Date().getMonth() + 1);
   };
 
   const guardar = async () => {
@@ -53,7 +58,9 @@ export default function RecurrentesScreen() {
       Alert.alert('Revisa los datos', 'Pon una descripción, un importe mayor que 0 y un día entre 1 y 31.');
       return;
     }
-    const nuevo: Recurrente = { ...editando, descripcion: descripcion.trim(), importe: imp, dia: d, categoria, tipo };
+    // Si no es mensual, el primer pago cae en el mes elegido de este año y de ahí se cuenta cada N meses.
+    const inicio = cada > 1 ? `${new Date().getFullYear()}-${String(mesPrimero).padStart(2, '0')}` : '';
+    const nuevo: Recurrente = { ...editando, descripcion: descripcion.trim(), importe: imp, dia: d, categoria, tipo, cada, inicio };
     if (editando.id) updateRecurrente(nuevo);
     else insertRecurrente({ ...nuevo, id: Crypto.randomUUID() });
     setEditando(null);
@@ -94,6 +101,8 @@ export default function RecurrentesScreen() {
       dia: s.dia,
       ultima: mes,
       activo: 1,
+      cada: 1,
+      inicio: '',
     });
     recargar();
   };
@@ -111,7 +120,7 @@ export default function RecurrentesScreen() {
         </TouchableOpacity>
       </View>
       <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 6 }}>
-        Alquiler, suscripciones o nómina: se registran solos cada mes en su día.
+        Alquiler, suscripciones, seguros o nómina: se registran solos con la frecuencia que elijas (cada mes, cada 6 meses, cada año…).
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
@@ -159,7 +168,7 @@ export default function RecurrentesScreen() {
                   </View>
                   <View style={{ flex: 1, opacity: r.activo ? 1 : 0.45 }}>
                     <Text style={{ color: tema.texto, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>{r.descripcion}</Text>
-                    <Text style={{ color: tema.textoSuave, fontSize: 12 }}>Día {r.dia} de cada mes</Text>
+                    <Text style={{ color: tema.textoSuave, fontSize: 12 }}>{textoFrecuencia(r)}</Text>
                   </View>
                   <Text style={{ color: r.tipo === 'ingreso' ? tema.exito : tema.texto, fontWeight: '700', opacity: r.activo ? 1 : 0.45 }}>
                     {r.tipo === 'ingreso' ? '+' : '-'}
@@ -217,6 +226,45 @@ export default function RecurrentesScreen() {
                 maxLength={2}
               />
             </View>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>¿CADA CUÁNTO SE REPITE?</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {FRECUENCIAS.map((f) => {
+                const activa = cada === f.cada;
+                return (
+                  <TouchableOpacity accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    key={f.cada}
+                    onPress={() => setCada(f.cada)}
+                    style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                  >
+                    <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 13, fontWeight: '600' }}>{f.nombre}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {cada > 1 ? (
+              <>
+                <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>¿EN QUÉ MES ES EL PRIMER PAGO?</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {NOMBRES_MES.map((nombre, i) => {
+                    const activa = mesPrimero === i + 1;
+                    return (
+                      <TouchableOpacity accessibilityRole="button"
+                        accessibilityState={{ selected: activa }}
+                        key={nombre}
+                        onPress={() => setMesPrimero(i + 1)}
+                        style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                      >
+                        <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 13, fontWeight: '600' }}>{nombre.charAt(0).toUpperCase() + nombre.slice(1)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+                <Text style={{ color: tema.textoSuave, fontSize: 12, marginTop: -6 }}>
+                  Se apuntará el día {dia || '…'} de ese mes y se repetirá {cada === 12 ? 'cada año' : `cada ${cada} meses`}.
+                </Text>
+              </>
+            ) : null}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {CATEGORIAS.map((c) => {
                 const activa = categoria === c.nombre;
@@ -253,7 +301,7 @@ export default function RecurrentesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 56, paddingHorizontal: 16 },
+  container: { flex: 1, paddingTop: arriba(56), paddingHorizontal: 16 },
   volver: { flexDirection: 'row', alignItems: 'center', marginLeft: -6 },
   cabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titulo: { fontSize: 30, fontWeight: '800' },

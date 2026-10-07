@@ -11,6 +11,7 @@ import {
   mesActual,
   fechaHoy,
   claveRegla,
+  tocaEnMes,
   Gasto,
   Recurrente,
 } from './db';
@@ -33,7 +34,7 @@ function siguienteMes(mes: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Crea los gastos/ingresos recurrentes que tocan hasta hoy (con un máximo de 12 meses atrás). */
+/** Crea los gastos/ingresos recurrentes que tocan hasta hoy (mensuales, cada 6 meses, anuales…; máximo 12 meses atrás o un ciclo). */
 export async function generarRecurrentes(): Promise<number> {
   const hoy = fechaHoy();
   const actual = mesActual();
@@ -43,13 +44,17 @@ export async function generarRecurrentes(): Promise<number> {
     if (!r.activo) continue;
 
     let mes = r.ultima ? siguienteMes(r.ultima) : actual;
-    // límite de seguridad: no más de 12 meses de golpe
+    // límite de seguridad: no más de 12 meses de golpe (o un ciclo entero si es más largo)
     const [ay, am] = actual.split('-').map(Number);
-    const tope = new Date(ay, am - 13, 1);
+    const tope = new Date(ay, am - 1 - Math.max(12, r.cada), 1);
     const minimo = `${tope.getFullYear()}-${String(tope.getMonth() + 1).padStart(2, '0')}`;
     if (mes < minimo) mes = minimo;
 
     while (mes <= actual) {
+      if (!tocaEnMes(r, mes)) {
+        mes = siguienteMes(mes);
+        continue;
+      }
       const fecha = fechaDe(mes, r.dia);
       if (fecha > hoy) break;
       const gasto = {
@@ -83,9 +88,11 @@ export function proximosCobros(dias = 30): ProximoCobro[] {
 
   for (const r of getRecurrentes()) {
     if (!r.activo) continue;
-    for (let i = 0; i < 2; i++) {
+    // se miran los meses necesarios para cubrir el plazo pedido, saltando los que no le tocan
+    for (let i = 0; i <= Math.ceil(dias / 28) + 1; i++) {
       const f = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
       const mes = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+      if (!tocaEnMes(r, mes)) continue;
       const fecha = fechaDe(mes, r.dia);
       const [y, m, d] = fecha.split('-').map(Number);
       const diff = Math.round((new Date(y, m - 1, d).getTime() - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime()) / 86400000);

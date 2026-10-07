@@ -14,3 +14,9 @@ export function useDisposicion() {
   const web = Platform.OS === 'web';
   return { escritorio: web && width >= 900, amplio: web && width >= 1100 };
 }
+
+/**
+ * Espacio superior de cada pantalla. En el móvil nativo hace falta dejar sitio a la barra de estado; en la web
+ * (navegador o app instalada) la barra ya queda fuera del contenido, así que se deja solo un margen pequeño.
+ */
+export const arriba = (nativo: number) => (Platform.OS === 'web' ? 20 : nativo);

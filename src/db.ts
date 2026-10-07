@@ -3,7 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import * as SQLite from 'expo-sqlite';
-import { Gasto, NuevoGasto, Pendiente, Recurrente, Meta, Tipo, FondosIniciales, normalizar, fechaHoy, mesActual, mesDesplazado, claveRegla, leerFondos, sumaFondos } from './db-comun';
+import { Gasto, NuevoGasto, Pendiente, Recurrente, Meta, Tipo, FondosIniciales, normalizar, fechaHoy, mesActual, mesDesplazado, claveRegla, leerFondos, sumaFondos, normalizarRecurrente } from './db-comun';
 
 export * from './db-comun';
 
@@ -110,6 +110,10 @@ export function initDB() {
   anadirColumna('gastos', cg, 'importe_original', 'REAL');
   anadirColumna('gastos', cg, 'divisiones', "TEXT NOT NULL DEFAULT ''");
   anadirColumna('gastos', cg, 'foto', "TEXT NOT NULL DEFAULT ''");
+
+  const cr = columnas('recurrentes');
+  anadirColumna('recurrentes', cr, 'cada', 'INTEGER NOT NULL DEFAULT 1');
+  anadirColumna('recurrentes', cr, 'inicio', "TEXT NOT NULL DEFAULT ''");
 
   const cp = columnas('pendientes');
   anadirColumna('pendientes', cp, 'tipo', "TEXT NOT NULL DEFAULT 'gasto'");
@@ -326,20 +330,20 @@ export function deletePendiente(id: string) {
 // ───────────────────────── Gastos recurrentes ─────────────────────────
 
 export function getRecurrentes(): Recurrente[] {
-  return db.getAllSync<Recurrente>('SELECT * FROM recurrentes ORDER BY dia, descripcion;');
+  return db.getAllSync<Recurrente>('SELECT * FROM recurrentes ORDER BY dia, descripcion;').map(normalizarRecurrente);
 }
 
 export function insertRecurrente(r: Recurrente) {
   db.runSync(
-    'INSERT INTO recurrentes (id, descripcion, categoria, importe, tipo, dia, ultima, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
-    r.id, r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.ultima, r.activo
+    'INSERT INTO recurrentes (id, descripcion, categoria, importe, tipo, dia, ultima, activo, cada, inicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+    r.id, r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.ultima, r.activo, r.cada, r.inicio
   );
 }
 
 export function updateRecurrente(r: Recurrente) {
   db.runSync(
-    'UPDATE recurrentes SET descripcion = ?, categoria = ?, importe = ?, tipo = ?, dia = ?, activo = ? WHERE id = ?;',
-    r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.activo, r.id
+    'UPDATE recurrentes SET descripcion = ?, categoria = ?, importe = ?, tipo = ?, dia = ?, activo = ?, cada = ?, inicio = ? WHERE id = ?;',
+    r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.activo, r.cada, r.inicio, r.id
   );
 }
 

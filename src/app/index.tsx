@@ -16,7 +16,7 @@ import Presionable from '../components/Presionable';
 import { toque } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { guardarMovimiento, eliminarMovimiento } from '../movimientos';
-import { useDisposicion } from '../layout';
+import { useDisposicion, arriba } from '../layout';
 import { CATEGORIAS, infoCategoria, formatoEuro, formatoFecha, useTema, useEsOscuro } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
 
@@ -391,7 +391,7 @@ export default function GastosScreen() {
 const styles = StyleSheet.create({
   panel: { borderRadius: 24, padding: 18, gap: 14 },
   botonNuevo: { height: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
+  container: { flex: 1, paddingTop: arriba(60), paddingHorizontal: 16 },
   titulo: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8, marginBottom: 14 },
   hero: { borderRadius: 28, padding: 22, gap: 14, overflow: 'hidden' },
   heroBrillo: { position: 'absolute', top: -70, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.10)' },

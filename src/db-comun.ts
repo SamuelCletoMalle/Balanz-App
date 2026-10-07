@@ -43,7 +43,49 @@ export type Recurrente = {
   dia: number; // día del mes (1-31)
   ultima: string; // 'YYYY-MM' del último mes generado ('' si ninguno)
   activo: number; // 0/1
+  cada: number; // cada cuántos meses se repite: 1 (mensual), 2, 3, 6, 12 (anual)…
+  inicio: string; // 'YYYY-MM' del primer pago; ancla de las repeticiones ('' si es mensual)
 };
+
+export const FRECUENCIAS: { cada: number; nombre: string }[] = [
+  { cada: 1, nombre: 'Cada mes' },
+  { cada: 2, nombre: 'Cada 2 meses' },
+  { cada: 3, nombre: 'Cada 3 meses' },
+  { cada: 4, nombre: 'Cada 4 meses' },
+  { cada: 6, nombre: 'Cada 6 meses' },
+  { cada: 12, nombre: 'Cada año' },
+];
+
+export const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/** Meses de diferencia entre dos 'YYYY-MM' (positivo si `b` es posterior a `a`). */
+export function mesesEntre(a: string, b: string): number {
+  const [ay, am] = a.split('-').map(Number);
+  const [by, bm] = b.split('-').map(Number);
+  return (by - ay) * 12 + (bm - am);
+}
+
+/** Rellena los campos nuevos de un recurrente guardado antes de existir las frecuencias. */
+export function normalizarRecurrente(r: Recurrente): Recurrente {
+  return { ...r, cada: r.cada >= 1 ? r.cada : 1, inicio: r.inicio ?? '' };
+}
+
+/** ¿Le toca pagar a este recurrente en el mes `mes` ('YYYY-MM')? */
+export function tocaEnMes(r: Recurrente, mes: string): boolean {
+  const cada = r.cada >= 1 ? r.cada : 1;
+  if (cada === 1 || !r.inicio) return true;
+  const d = mesesEntre(r.inicio, mes);
+  return d >= 0 && d % cada === 0;
+}
+
+/** Texto para la lista: "Día 5 de cada mes", "El 15 de marzo, cada año"… */
+export function textoFrecuencia(r: Recurrente): string {
+  const cada = r.cada >= 1 ? r.cada : 1;
+  if (cada === 1) return `Día ${r.dia} de cada mes`;
+  const mesInicio = r.inicio ? NOMBRES_MES[Number(r.inicio.slice(5, 7)) - 1] : '';
+  if (cada === 12) return mesInicio ? `El ${r.dia} de ${mesInicio}, cada año` : `Día ${r.dia}, cada año`;
+  return `Día ${r.dia}, cada ${cada} meses${mesInicio ? ` (desde ${mesInicio})` : ''}`;
+}
 
 export type Meta = { id: string; nombre: string; objetivo: number; ahorrado: number; icono: string };
 

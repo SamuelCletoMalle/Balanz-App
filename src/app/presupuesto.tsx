@@ -3,7 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback } from 'react';
-import { useDisposicion } from '../layout';
+import { useDisposicion, arriba } from '../layout';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
@@ -368,7 +368,7 @@ export default function ResumenScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
+  container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   titulo: { fontSize: 32, fontWeight: '800' },
   dosColumnas: { flexDirection: 'row', gap: 12 },
   rejilla: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignItems: 'start' } as object,

@@ -3,6 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback, useMemo } from 'react';
+import { arriba } from '../layout';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '../components/Texto';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -166,7 +167,7 @@ export default function CompartidosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 56, paddingHorizontal: 16 },
+  container: { flex: 1, paddingTop: arriba(56), paddingHorizontal: 16 },
   volver: { flexDirection: 'row', alignItems: 'center', marginLeft: -6 },
   titulo: { fontSize: 30, fontWeight: '800' },
   hero: { borderRadius: 24, padding: 20, gap: 4 },

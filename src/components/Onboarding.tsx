@@ -3,6 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useState } from 'react';
+import { arriba } from '../layout';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { Easing, FadeIn, FadeInRight, FadeOutLeft, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -295,7 +296,7 @@ export default function Onboarding({ onTerminar, soloVista = false }: { onTermin
 }
 
 const estilos = StyleSheet.create({
-  raiz: { flex: 1, paddingTop: 56 },
+  raiz: { flex: 1, paddingTop: arriba(56) },
   cabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, minHeight: 44 },
   punto: { width: 28, height: 6, borderRadius: 3 },
   contenido: { flex: 1, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 12 },

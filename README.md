@@ -41,7 +41,7 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 | 🚀 **Alta inicial** | Recorrido guiado la primera vez: cuánto dinero tienes y un límite mensual opcional |
 | 📊 **Presupuestos** | Global y por categoría, con avisos al acercarte al límite |
 | 🎯 **Metas de ahorro** | Objetivos con progreso |
-| 🔁 **Recurrentes** | Gastos fijos que se generan solos y detección de suscripciones |
+| 🔁 **Recurrentes** | Pagos fijos que se apuntan solos: cada mes, cada 2, 3, 4 o 6 meses, o cada año. Detecta suscripciones |
 | 👥 **Compartidos** | Gastos en grupo y reparto entre personas |
 | ⚡ **Captura automática** | Apple Pay y SMS del banco (iOS, con Atajos) y notificaciones (Android). Los pagos llegan a *Pendientes* para confirmarlos, o se **apuntan directamente**; la app aprende reglas de categorización |
 | 📄 **Informes** | Informe mensual exportable a PDF |

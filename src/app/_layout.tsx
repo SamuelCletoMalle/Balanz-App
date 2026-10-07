@@ -3,7 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useRef, useState } from 'react';
-import { AppState, View, ActivityIndicator } from 'react-native';
+import { AppState, View, ActivityIndicator, Platform } from 'react-native';
 import { useDisposicion } from '../layout';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -31,6 +31,12 @@ export default function RootLayout() {
   const tema = useTema();
   // En un ordenador (web ancha) el menú pasa a un lado y el contenido se centra con un ancho cómodo; en el móvil no cambia nada.
   const { escritorio, amplio } = useDisposicion();
+  // En la web, el color de la barra del navegador y el fondo de la página siguen al tema de la app.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.getElementById('tema-color')?.setAttribute('content', tema.fondo);
+    document.documentElement.style.backgroundColor = tema.fondo;
+  }, [tema.fondo]);
   const [session, setSession] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
   const [intro, setIntro] = useState(true);

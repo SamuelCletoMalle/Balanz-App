@@ -5,7 +5,7 @@
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
     <title>Balanz</title>
-    <meta name="theme-color" content="#4f46e5" />
+    <meta name="theme-color" content="#4f46e5" id="tema-color" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="description" content="Controla tus gastos, ingresos y presupuestos." />
     <link rel="manifest" href="/manifest.json" />
@@ -15,7 +15,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Balanz" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="barra-estado" />
+    <script>
+      // Antes de pintar nada: la barra de arriba del móvil toma el color de la app (oscuro o claro), según lo elegido en
+      // Más → Apariencia o, si es "Sistema", según el móvil. Así no queda una franja blanca sobre la app oscura.
+      (function () {
+        try {
+          var p = {};
+          try { p = JSON.parse(localStorage.getItem('balanz:accesibilidad') || '{}'); } catch (e) {}
+          var oscuro = p.tema === 'oscuro' || (p.tema !== 'claro' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+          var fondo = p.altoContraste ? (oscuro ? '#000000' : '#ffffff') : (oscuro ? '#0b1020' : '#f4f5f9');
+          document.getElementById('barra-estado').setAttribute('content', oscuro ? 'black-translucent' : 'default');
+          document.getElementById('tema-color').setAttribute('content', fondo);
+          document.documentElement.style.backgroundColor = fondo;
+        } catch (e) {}
+      })();
+    </script>
     <style id="expo-reset">
       html,
       body {
@@ -34,6 +49,9 @@
         height: 100%;
         height: 100dvh;
         flex: 1;
+        box-sizing: border-box;
+        /* Con la barra del móvil translúcida (modo oscuro), el contenido empieza justo debajo de ella. */
+        padding-top: env(safe-area-inset-top);
       }
       input,
       textarea {

@@ -2,6 +2,7 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
+import { arriba } from '../layout';
 import { useState, useCallback } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { Text } from '../components/Texto';
@@ -166,7 +167,7 @@ export default function PendientesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
+  container: { flex: 1, paddingTop: arriba(60), paddingHorizontal: 16 },
   cabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titulo: { fontSize: 32, fontWeight: '800' },
   subtitulo: { fontSize: 13, marginTop: 4 },
