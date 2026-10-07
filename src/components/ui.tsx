@@ -11,6 +11,7 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
+  withSpring,
   withTiming,
   ZoomIn,
   FadeInDown,
@@ -282,6 +283,55 @@ export function DisolverTema({ fondo }: { fondo: string }) {
   return <Animated.View pointerEvents="none" style={[styles.disolver, estilo]} />;
 }
 
+/**
+ * Selector de vistas: una pastilla con tantas opciones como haga falta y un pulgar que se desliza hasta la elegida.
+ * Sirve para repartir una pantalla larga en secciones sin sacar al usuario de ella.
+ */
+export function Segmentos<T extends string>({ opciones, valor, onChange }: { opciones: { id: T; texto: string }[]; valor: T; onChange: (v: T) => void }) {
+  const tema = useTema();
+  const quieto = useQuieto();
+  const [ancho, setAncho] = useState(0);
+  const indice = Math.max(0, opciones.findIndex((o) => o.id === valor));
+  const hueco = ancho > 0 ? (ancho - 8) / opciones.length : 0;
+  const x = useSharedValue(0);
+  const colocado = useRef(false);
+  useEffect(() => {
+    if (hueco <= 0) return;
+    const destino = indice * hueco;
+    if (!colocado.current || quieto) x.set(destino);
+    else x.set(withSpring(destino, { duration: 300, dampingRatio: 0.85 }));
+    colocado.current = true;
+  }, [indice, hueco, quieto, x]);
+  const estiloPulgar = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }], width: hueco }));
+  return (
+    <View onLayout={(e) => setAncho(e.nativeEvent.layout.width)} accessibilityRole="tablist" style={[styles.segmentos, { backgroundColor: tema.tarjetaSuave }]}>
+      {hueco > 0 ? <Animated.View pointerEvents="none" style={[styles.segmentoPulgar, { backgroundColor: tema.primario }, estiloPulgar]} /> : null}
+      {opciones.map((o) => {
+        const activo = o.id === valor;
+        return (
+          <Pressable
+            key={o.id}
+            accessibilityRole="tab"
+            accessibilityLabel={o.texto}
+            accessibilityState={{ selected: activo }}
+            style={styles.segmento}
+            onPress={() => {
+              if (!activo) {
+                toque();
+                onChange(o.id);
+              }
+            }}
+          >
+            <Text style={{ color: activo ? tema.primarioTexto : tema.texto, fontSize: 14, fontWeight: activo ? '700' : '600' }} numberOfLines={1}>
+              {o.texto}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Barra de progreso: se llena de izquierda a derecha al aparecer y cada vez que cambia el valor (0..1). */
 export function Barra({ p, color, radio = 7 }: { p: number; color: string; radio?: number }) {
   const quieto = useQuieto();
@@ -295,6 +345,9 @@ export function Barra({ p, color, radio = 7 }: { p: number; color: string; radio
 }
 
 const styles = StyleSheet.create({
+  segmentos: { flexDirection: 'row', height: 46, borderRadius: 16, padding: 4 },
+  segmentoPulgar: { position: 'absolute', top: 4, bottom: 4, left: 4, borderRadius: 12 },
+  segmento: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   disolver: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 },
   tarjeta: { borderRadius: RADIO.tarjeta, borderWidth: StyleSheet.hairlineWidth, padding: 18, gap: 14 },
   boton: { minHeight: 52, borderRadius: RADIO.boton, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },

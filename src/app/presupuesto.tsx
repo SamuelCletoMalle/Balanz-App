@@ -2,7 +2,7 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, ReactNode } from 'react';
 import { useDisposicion, arriba } from '../layout';
 import GraficoSaldo from '../components/GraficoSaldo';
 import { saldosPorCuenta } from '../cuentas';
@@ -34,7 +34,25 @@ import {
 import { proximosCobros, ProximoCobro } from '../recurrentes';
 import { comprobarPresupuestos } from '../avisos';
 import { getCategorias, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
-import { Escalonado, Barra } from '../components/ui';
+import { Escalonado, Barra, Segmentos, useQuieto } from '../components/ui';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
+type Vista = 'mes' | 'cuentas' | 'evolucion';
+
+/**
+ * Agrupa las tarjetas de una vista del Resumen. En pantallas anchas no hace nada (se ven todas y la cuadrícula de CSS
+ * usa cada tarjeta como celda); en el móvil solo se enseña la vista elegida, que aparece con un fundido corto.
+ */
+function Grupo({ amplio, clave, activo, children }: { amplio: boolean; clave: string; activo: boolean; children: ReactNode }) {
+  const quieto = useQuieto();
+  if (amplio) return <>{children}</>;
+  if (!activo) return null;
+  return (
+    <Animated.View key={clave} entering={quieto ? undefined : FadeIn.duration(240)} style={{ gap: 14 }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function ResumenScreen() {
   const { amplio } = useDisposicion();
@@ -43,6 +61,7 @@ export default function ResumenScreen() {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const router = useRouter();
+  const [vista, setVista] = useState<Vista>('mes');
   const [gastado, setGastado] = useState(0);
   const [ingresos, setIngresos] = useState(0);
   const [limite, setLimiteState] = useState(0);
@@ -169,6 +188,19 @@ export default function ResumenScreen() {
         ))}
       </View>
 
+      {amplio ? null : (
+        <Segmentos
+          opciones={[
+            { id: 'mes', texto: 'Este mes' },
+            { id: 'cuentas', texto: 'Cuentas' },
+            { id: 'evolucion', texto: 'Evolución' },
+          ]}
+          valor={vista}
+          onChange={setVista}
+        />
+      )}
+
+      <Grupo amplio={amplio} clave="mes" activo={vista === 'mes'}>
       <View style={[styles.dosColumnas, abarcar]}>
         <View style={[styles.mini, { backgroundColor: tema.tarjeta }]}>
           <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>INGRESOS</Text>
@@ -310,6 +342,46 @@ export default function ResumenScreen() {
         })}
       </View>
 
+      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
+        <View style={styles.fila}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRÓXIMOS 30 DÍAS</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/recurrentes')}>
+            <Text style={{ color: tema.primario, fontWeight: '700', fontSize: 12 }}>Gestionar</Text>
+          </TouchableOpacity>
+        </View>
+        {cobros.length === 0 ? (
+          <Text style={{ color: tema.textoSuave, fontSize: 14 }}>No hay cobros recurrentes programados.</Text>
+        ) : (
+          cobros.slice(0, 6).map((c) => {
+            const cat = infoCategoria(c.recurrente.categoria);
+            return (
+              <View key={c.recurrente.id + c.fecha} style={styles.fila}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <View style={[styles.icono, { backgroundColor: cat.color + '22' }]}>
+                    <Ionicons name={cat.icono} size={14} color={cat.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: tema.texto, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>
+                      {c.recurrente.descripcion}
+                    </Text>
+                    <Text style={{ color: tema.textoSuave, fontSize: 11 }}>
+                      {c.enDias === 0 ? 'Hoy' : c.enDias === 1 ? 'Mañana' : `${formatoFecha(c.fecha)} · en ${c.enDias} días`}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ color: c.recurrente.tipo === 'ingreso' ? tema.exito : tema.texto, fontWeight: '700' }}>
+                  {c.recurrente.tipo === 'ingreso' ? '+' : '-'}
+                  {formatoEuro(c.recurrente.importe)}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      </Grupo>
+
+      <Grupo amplio={amplio} clave="cuentas" activo={vista === 'cuentas'}>
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>TUS CUENTAS</Text>
@@ -366,6 +438,9 @@ export default function ResumenScreen() {
         ) : null}
       </View>
 
+      </Grupo>
+
+      <Grupo amplio={amplio} clave="evolucion" activo={vista === 'evolucion'}>
       {evolucion.hayDatos ? (
         <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]}>
           <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>EVOLUCIÓN DEL SALDO</Text>
@@ -423,42 +498,7 @@ export default function ResumenScreen() {
         </View>
       </View>
 
-      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
-        <View style={styles.fila}>
-          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRÓXIMOS 30 DÍAS</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/recurrentes')}>
-            <Text style={{ color: tema.primario, fontWeight: '700', fontSize: 12 }}>Gestionar</Text>
-          </TouchableOpacity>
-        </View>
-        {cobros.length === 0 ? (
-          <Text style={{ color: tema.textoSuave, fontSize: 14 }}>No hay cobros recurrentes programados.</Text>
-        ) : (
-          cobros.slice(0, 6).map((c) => {
-            const cat = infoCategoria(c.recurrente.categoria);
-            return (
-              <View key={c.recurrente.id + c.fecha} style={styles.fila}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <View style={[styles.icono, { backgroundColor: cat.color + '22' }]}>
-                    <Ionicons name={cat.icono} size={14} color={cat.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: tema.texto, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>
-                      {c.recurrente.descripcion}
-                    </Text>
-                    <Text style={{ color: tema.textoSuave, fontSize: 11 }}>
-                      {c.enDias === 0 ? 'Hoy' : c.enDias === 1 ? 'Mañana' : `${formatoFecha(c.fecha)} · en ${c.enDias} días`}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={{ color: c.recurrente.tipo === 'ingreso' ? tema.exito : tema.texto, fontWeight: '700' }}>
-                  {c.recurrente.tipo === 'ingreso' ? '+' : '-'}
-                  {formatoEuro(c.recurrente.importe)}
-                </Text>
-              </View>
-            );
-          })
-        )}
-      </View>
+      </Grupo>
 
       <Modal visible={!!catEditando} transparent animationType={reducirMovimiento ? 'none' : 'fade'} onRequestClose={() => setCatEditando(null)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

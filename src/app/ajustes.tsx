@@ -2,7 +2,7 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, ReactNode } from 'react';
 import { useDisposicion, arriba } from '../layout';
 import { Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -25,7 +25,8 @@ import { autenticar, biometriaDisponible, bloqueoActivado, guardarBloqueo } from
 import { useTema, Tema, IconoNombre, formatoEuro } from '../tema';
 import { cambiarPreferencias, usePreferencias, ModoTema, TamanoTexto } from '../accesibilidad';
 import type { Session } from '@supabase/supabase-js';
-import { Escalonado, Interruptor } from '../components/ui';
+import { Escalonado, Interruptor, Segmentos as SelectorVista, useQuieto } from '../components/ui';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 function Fila({
   tema,
@@ -109,6 +110,20 @@ function Segmentos<T extends string>({
   );
 }
 
+type Vista = 'herramientas' | 'ajustes' | 'datos';
+
+/** Reparte Más en tres vistas en el móvil; en pantallas anchas no hace nada (se ven todas en columnas). */
+function Grupo({ amplio, clave, activo, children }: { amplio: boolean; clave: string; activo: boolean; children: ReactNode }) {
+  const quieto = useQuieto();
+  if (amplio) return <>{children}</>;
+  if (!activo) return null;
+  return (
+    <Animated.View key={clave} entering={quieto ? undefined : FadeIn.duration(240)} style={{ gap: 18 }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function MasScreen() {
   const { amplio } = useDisposicion();
   const abarcar = amplio ? ({ columnSpan: 'all', marginBottom: 14 } as object) : null;
@@ -120,6 +135,7 @@ export default function MasScreen() {
   const [numGastos, setNumGastos] = useState(0);
   const [cuentas, setCuentas] = useState({ reglas: 0, metas: 0, recurrentes: 0 });
   const [cargando, setCargando] = useState(false);
+  const [vista, setVista] = useState<Vista>('herramientas');
   const [session, setSession] = useState<Session | null>(null);
   const [bloqueo, setBloqueo] = useState(bloqueoActivado());
   const [avisos, setAvisos] = useState(avisosActivados());
@@ -344,6 +360,19 @@ export default function MasScreen() {
         </View>
       </View>
 
+      {amplio ? null : (
+        <SelectorVista
+          opciones={[
+            { id: 'herramientas', texto: 'Herramientas' },
+            { id: 'ajustes', texto: 'Ajustes' },
+            { id: 'datos', texto: 'Datos y cuenta' },
+          ]}
+          valor={vista}
+          onChange={setVista}
+        />
+      )}
+
+      <Grupo amplio={amplio} clave="herramientas" activo={vista === 'herramientas'}>
       <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>HERRAMIENTAS</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
@@ -372,6 +401,9 @@ export default function MasScreen() {
       </View>
       </View>
 
+      </Grupo>
+
+      <Grupo amplio={amplio} clave="ajustes" activo={vista === 'ajustes'}>
       <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>ACCESIBILIDAD</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
@@ -443,6 +475,9 @@ export default function MasScreen() {
       </View>
       </View>
 
+      </Grupo>
+
+      <Grupo amplio={amplio} clave="datos" activo={vista === 'datos'}>
       <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>DATOS</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
@@ -467,6 +502,8 @@ export default function MasScreen() {
         <Fila tema={tema} icono="trash-outline" titulo="Borrar todos los datos" color={tema.peligro} onPress={confirmarBorrado} ultimo />
       </View>
       </View>
+
+      </Grupo>
 
       <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Balanz · versión 1.0.0</Text>
       <Modal visible={saldoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setSaldoAbierto(false)}>

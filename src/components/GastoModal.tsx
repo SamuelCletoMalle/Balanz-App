@@ -58,6 +58,8 @@ type Props = {
   onEliminar?: () => void;
   onDuplicar?: () => void;
   nota?: string;
+  /** Tipo con el que se abre un movimiento nuevo (por defecto, gasto). */
+  tipoInicial?: Tipo;
 };
 
 async function guardarFoto(uri: string): Promise<string> {
@@ -78,6 +80,7 @@ export default function GastoModal({
   onEliminar,
   onDuplicar,
   nota,
+  tipoInicial,
 }: Props) {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
@@ -98,7 +101,7 @@ export default function GastoModal({
   useEffect(() => {
     if (!visible) return;
     categoriaManual.current = !!inicial;
-    setTipo(inicial?.tipo === 'ingreso' ? 'ingreso' : 'gasto');
+    setTipo(inicial ? (inicial.tipo === 'ingreso' ? 'ingreso' : 'gasto') : (tipoInicial ?? 'gasto'));
     setCuenta(inicial?.cuenta || 'banco');
     setDescripcion(inicial?.descripcion ?? '');
     setCategoria(inicial?.categoria ?? getCategorias()[0].nombre);

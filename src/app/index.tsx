@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect, ReactNode } from 'react';
 import { View, SectionList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, TextInput } from '../components/Texto';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -87,6 +87,8 @@ export default function GastosScreen() {
   const tema = useTema();
   const { amplio } = useDisposicion();
   const introLista = useIntroLista();
+  const router = useRouter();
+  const [tipoNuevo, setTipoNuevo] = useState<'gasto' | 'ingreso'>('gasto');
   const { escritorio } = useDisposicion();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const { reducirMovimiento, ocultarImportes } = usePreferencias();
@@ -190,8 +192,9 @@ export default function GastosScreen() {
   const gastadoAnimado = useContador(totalMes);
   const ingresosAnimados = useContador(ingresosMes);
 
-  const abrirNuevo = () => {
+  const abrirNuevo = (tipo: 'gasto' | 'ingreso' = 'gasto') => {
     setEditando(null);
+    setTipoNuevo(tipo);
     setModalVisible(true);
     giro.set(withSpring(1, { duration: 320, dampingRatio: 0.7 }));
   };
@@ -365,6 +368,31 @@ export default function GastosScreen() {
   const cabecera = (
     <View style={{ gap: 20, paddingBottom: 8 }}>
       {amplio ? null : heroBloque}
+
+      {amplio ? null : (
+        <View style={styles.accesos}>
+          {[
+            { id: 'gasto', icono: 'remove-circle-outline', texto: 'Gasto', accion: () => abrirNuevo('gasto') },
+            { id: 'ingreso', icono: 'add-circle-outline', texto: 'Ingreso', accion: () => abrirNuevo('ingreso') },
+            { id: 'mover', icono: 'swap-horizontal-outline', texto: 'Mover', accion: () => router.push('/presupuesto') },
+            { id: 'metas', icono: 'flag-outline', texto: 'Metas', accion: () => router.push('/metas') },
+          ].map((a) => (
+            <Presionable
+              key={a.id}
+              accessibilityLabel={a.texto}
+              contenedor={{ flex: 1 }}
+              style={[styles.acceso, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}
+              onPress={() => {
+                toque();
+                a.accion();
+              }}
+            >
+              <Ionicons name={a.icono as never} size={22} color={tema.oscuro ? tema.acento : tema.texto} />
+              <Text style={{ color: tema.texto, fontSize: 12, fontWeight: '600' }}>{a.texto}</Text>
+            </Presionable>
+          ))}
+        </View>
+      )}
 
       <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
         <View style={[styles.buscador, { backgroundColor: tema.tarjeta, borderColor: tema.borde, flex: 1 }]}>
@@ -607,6 +635,7 @@ export default function GastosScreen() {
         visible={modalVisible}
         titulo={editando ? 'Editar movimiento' : 'Nuevo movimiento'}
         inicial={editando ?? undefined}
+        tipoInicial={tipoNuevo}
         onGuardar={guardar}
         onCancelar={() => setModalVisible(false)}
         onEliminar={editando ? eliminar : undefined}
@@ -644,6 +673,8 @@ const styles = StyleSheet.create({
   buscadorInput: { flex: 1, fontSize: 15 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 22, marginRight: 10, borderWidth: 1 },
   diaCabecera: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 22, paddingBottom: 10, paddingHorizontal: 6 },
+  accesos: { flexDirection: 'row', gap: 10 },
+  acceso: { height: 74, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', gap: 6 },
   accionFila: { width: 88, alignItems: 'center', justifyContent: 'center' },
   esqueletoFila: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   diaTexto: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
