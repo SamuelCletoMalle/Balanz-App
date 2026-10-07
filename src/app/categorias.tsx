@@ -13,6 +13,7 @@ import { quitarCategoria, esCategoriaPropia } from '../categorias';
 import { subirPerfil } from '../sync';
 import { getCategorias, useTema } from '../tema';
 import { arriba } from '../layout';
+import { Escalonado } from '../components/ui';
 
 export default function CategoriasScreen() {
   const tema = useTema();
@@ -52,6 +53,7 @@ export default function CategoriasScreen() {
         Las que vienen de serie no se pueden borrar. Crea las tuyas (Mascotas, Regalos, Niños…) y salen al apuntar un gasto.
       </Text>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+<Escalonado>
         {creando ? (
           <NuevaCategoria
             tema={tema}
@@ -80,7 +82,8 @@ export default function CategoriasScreen() {
             </View>
           ))}
         </View>
-      </ScrollView>
+      </Escalonado>
+</ScrollView>
     </View>
   );
 }

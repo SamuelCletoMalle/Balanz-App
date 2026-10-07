@@ -14,6 +14,7 @@ import * as Crypto from 'expo-crypto';
 import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
 import { generarRecurrentes, detectarSuscripciones, textoVariacion, Sospechosa } from '../recurrentes';
 import { getCategorias, infoCategoria, formatoEuro, useTema } from '../tema';
+import { Escalonado } from '../components/ui';
 
 const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
 
@@ -124,6 +125,7 @@ export default function RecurrentesScreen() {
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+<Escalonado>
         {sospechosas.length > 0 ? (
           <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
             <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>DETECTADAS AUTOMÁTICAMENTE</Text>
@@ -180,7 +182,8 @@ export default function RecurrentesScreen() {
             })}
           </View>
         )}
-      </ScrollView>
+      </Escalonado>
+</ScrollView>
 
       <Modal visible={!!editando} transparent animationType={reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setEditando(null)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

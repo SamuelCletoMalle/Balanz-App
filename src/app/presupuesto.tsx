@@ -34,6 +34,7 @@ import {
 import { proximosCobros, ProximoCobro } from '../recurrentes';
 import { comprobarPresupuestos } from '../avisos';
 import { getCategorias, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
+import { Escalonado, Barra } from '../components/ui';
 
 export default function ResumenScreen() {
   const { amplio } = useDisposicion();
@@ -146,6 +147,7 @@ export default function ResumenScreen() {
       contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container}
       showsVerticalScrollIndicator={false}
     >
+<Escalonado>
       <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Resumen</Text>
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }, abarcar]} accessible accessibilityLabel={`Tu saldo: ${formatoEuro(cuentas.saldo)}`}>
@@ -240,7 +242,7 @@ export default function ResumenScreen() {
               <Text style={{ fontSize: 16, color: tema.textoSuave, fontWeight: '600' }}> / {formatoEuro(limite)}</Text>
             </Text>
             <View style={[styles.barraFondo, { backgroundColor: tema.tarjetaSuave }]}>
-              <View style={[styles.barra, { width: `${porcentaje * 100}%`, backgroundColor: colorEstado }]} />
+              <Barra p={porcentaje} color={colorEstado} />
             </View>
             <Text style={{ color: colorEstado, fontWeight: '700', fontSize: 15 }}>
               {restante >= 0 ? `Te quedan ${formatoEuro(restante)}` : `Te has pasado ${formatoEuro(Math.abs(restante))}`}
@@ -301,7 +303,7 @@ export default function ResumenScreen() {
                 </Text>
               </View>
               <View style={[styles.barraFina, { backgroundColor: tema.tarjetaSuave }]}>
-                <View style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 4, backgroundColor: color }} />
+                <Barra p={pct} color={color} radio={4} />
               </View>
             </TouchableOpacity>
           );
@@ -487,7 +489,8 @@ export default function ResumenScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    </Escalonado>
+</ScrollView>
   );
 }
 

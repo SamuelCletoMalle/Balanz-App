@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { mesDesplazado } from '../db';
 import { datosInforme, DatosInforme, exportarInformePDF, nombreMes, variacionTexto } from '../informe';
 import { infoCategoria, formatoEuro, useTema } from '../tema';
+import { Escalonado } from '../components/ui';
 
 export default function InformeScreen() {
   const tema = useTema();
@@ -73,6 +74,7 @@ export default function InformeScreen() {
 
       {datos ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+<Escalonado>
           <View style={styles.dos}>
             {[
               { etiqueta: 'GASTOS', valor: datos.gastos, previo: datos.gastosPrevios, color: tema.peligro, inverso: true },
@@ -147,7 +149,8 @@ export default function InformeScreen() {
               </>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </Escalonado>
+</ScrollView>
       ) : null}
     </View>
   );

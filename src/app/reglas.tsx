@@ -10,6 +10,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getReglas, borrarRegla } from '../db';
 import { infoCategoria, useTema } from '../tema';
+import { Escalonado } from '../components/ui';
 
 export default function ReglasScreen() {
   const tema = useTema();
@@ -30,6 +31,7 @@ export default function ReglasScreen() {
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+<Escalonado>
         {reglas.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 60, gap: 10 }}>
             <Ionicons name="sparkles-outline" size={52} color={tema.textoSuave} />
@@ -68,7 +70,8 @@ export default function ReglasScreen() {
             })}
           </View>
         )}
-      </ScrollView>
+      </Escalonado>
+</ScrollView>
     </View>
   );
 }

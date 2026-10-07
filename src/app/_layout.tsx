@@ -7,7 +7,7 @@ import { AppState, View, ActivityIndicator, Platform } from 'react-native';
 import { useDisposicion } from '../layout';
 import { cargarCategoriasExtra } from '../categorias';
 import { vigilarErrores } from '../errores';
-import { Tabs } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -18,6 +18,7 @@ import { supabase } from '../supabase';
 import LoginScreen from '../components/LoginScreen';
 import Bloqueo from '../components/Bloqueo';
 import Intro from '../components/Intro';
+import BarraInferior from '../components/BarraInferior';
 import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
 import { descargarGastosDeLaNube, sincronizarCaptaciones, sincronizarPerfil } from '../sync';
@@ -169,6 +170,7 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Tabs
           backBehavior="history"
+          tabBar={escritorio ? undefined : (props) => <BarraInferior {...props} />}
           screenLayout={
             escritorio
               ? ({ children }) => (
@@ -180,6 +182,8 @@ export default function RootLayout() {
           }
           screenOptions={{
             headerShown: false,
+            animation: 'fade',
+            transitionSpec: { animation: 'timing', config: { duration: 180 } },
             ...(escritorio ? { tabBarPosition: 'left' as const, tabBarVariant: 'material' as const } : {}),
             tabBarActiveTintColor: tema.primario,
             tabBarInactiveTintColor: tema.textoSuave,

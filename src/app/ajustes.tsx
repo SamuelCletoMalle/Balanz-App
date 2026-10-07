@@ -25,6 +25,7 @@ import { autenticar, biometriaDisponible, bloqueoActivado, guardarBloqueo } from
 import { useTema, Tema, IconoNombre, formatoEuro } from '../tema';
 import { cambiarPreferencias, usePreferencias, ModoTema, TamanoTexto } from '../accesibilidad';
 import type { Session } from '@supabase/supabase-js';
+import { Escalonado } from '../components/ui';
 
 function Fila({
   tema,
@@ -328,6 +329,7 @@ export default function MasScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container} showsVerticalScrollIndicator={false}>
+<Escalonado>
       <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Más</Text>
 
       <View style={[styles.perfil, { backgroundColor: tema.tarjeta }, abarcar]}>
@@ -519,7 +521,8 @@ export default function MasScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    </Escalonado>
+</ScrollView>
   );
 }
 

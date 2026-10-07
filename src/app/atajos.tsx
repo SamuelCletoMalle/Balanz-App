@@ -13,6 +13,7 @@ import * as Clipboard from 'expo-clipboard';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../supabase';
 import { obtenerTokenCaptacion, sincronizarCaptaciones } from '../sync';
 import { useTema, Tema, IconoNombre } from '../tema';
+import { Escalonado } from '../components/ui';
 
 const RPC = `${supabaseUrl}/rest/v1/rpc`;
 
@@ -151,6 +152,7 @@ export default function AtajosScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+<Escalonado>
       <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
         <Ionicons name="chevron-back" size={22} color={tema.primario} />
         <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
@@ -389,7 +391,8 @@ export default function AtajosScreen() {
           </Text>
         </>
       )}
-    </ScrollView>
+    </Escalonado>
+</ScrollView>
   );
 }
 

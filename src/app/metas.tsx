@@ -15,6 +15,7 @@ import { getMetas, insertMeta, updateMeta, deleteMeta, NOMBRES_MES, Meta } from 
 import { aportacionNecesaria } from '../metas';
 import { parsearMes } from '../periodo';
 import { formatoEuro, useTema, IconoNombre } from '../tema';
+import { Escalonado, Barra } from '../components/ui';
 
 const ICONOS: IconoNombre[] = ['airplane-outline', 'home-outline', 'car-outline', 'laptop-outline', 'gift-outline', 'school-outline', 'shield-checkmark-outline', 'flag-outline'];
 
@@ -113,6 +114,7 @@ export default function MetasScreen() {
       ) : null}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+<Escalonado>
         {metas.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 60, gap: 10 }}>
             <Ionicons name="flag-outline" size={52} color={tema.textoSuave} />
@@ -137,7 +139,7 @@ export default function MetasScreen() {
                   <Text style={{ color: completa ? tema.exito : tema.texto, fontWeight: '800', fontSize: 18 }}>{Math.round(pct * 100)}%</Text>
                 </View>
                 <View style={[styles.barraFondo, { backgroundColor: tema.tarjetaSuave }]}>
-                  <View style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 6, backgroundColor: completa ? tema.exito : tema.primario }} />
+                  <Barra p={pct} color={completa ? tema.exito : tema.primario} radio={6} />
                 </View>
                 {!completa && (m.fecha || m.aporte > 0) ? (
                   <View style={{ gap: 2 }}>
@@ -171,7 +173,8 @@ export default function MetasScreen() {
             );
           })
         )}
-      </ScrollView>
+      </Escalonado>
+</ScrollView>
 
       <Modal visible={!!editando} transparent animationType={reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setEditando(null)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

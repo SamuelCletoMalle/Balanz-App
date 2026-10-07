@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getGastos, leerDivisiones, Gasto, Tipo } from '../db';
 import { guardarMovimiento } from '../movimientos';
 import { formatoEuro, formatoFecha, useTema } from '../tema';
+import { Escalonado } from '../components/ui';
 
 type Deuda = { gasto: Gasto; indice: number; importe: number; pagado: boolean };
 
@@ -100,6 +101,7 @@ export default function CompartidosScreen() {
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+<Escalonado>
         {personas.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 60, gap: 10 }}>
             <Ionicons name="people-outline" size={52} color={tema.textoSuave} />
@@ -163,7 +165,8 @@ export default function CompartidosScreen() {
             ))}
           </>
         )}
-      </ScrollView>
+      </Escalonado>
+</ScrollView>
     </View>
   );
 }

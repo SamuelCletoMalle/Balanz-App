@@ -20,7 +20,10 @@ import { useDisposicion, arriba } from '../layout';
 import { getCategorias, infoCategoria, formatoEuro, formatoFecha, tintaCategoria, useTema } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
 import Aviso from '../components/Aviso';
-import { Chip, EstadoVacio, useContador } from '../components/ui';
+import Logo from '../components/Logo';
+import { LOGO_CABECERA } from '../components/Intro';
+import { useIntroLista } from '../intro-estado';
+import { Chip, EstadoVacio, useContador, Barra } from '../components/ui';
 import { Alert } from '../dialogos';
 import { Periodo, PERIODOS, rangoPeriodo } from '../periodo';
 
@@ -29,6 +32,7 @@ const SALIDA = Easing.bezier(...CURVAS.salida);
 export default function GastosScreen() {
   const tema = useTema();
   const { amplio } = useDisposicion();
+  const introLista = useIntroLista();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const { reducirMovimiento, ocultarImportes } = usePreferencias();
   const [saldo, setSaldo] = useState(0);
@@ -233,7 +237,7 @@ export default function GastosScreen() {
           {limite > 0 ? (
             <View style={{ gap: 6 }}>
               <View style={[styles.heroBarraFondo, { backgroundColor: barraHero }]}>
-                <View style={[styles.heroBarra, { width: `${porcentaje * 100}%`, backgroundColor: colorBarra }]} />
+                <Barra p={porcentaje} color={colorBarra} radio={4} />
               </View>
               <Text style={[styles.heroPie, { color: tinta }]}>
                 {totalMes <= limite
@@ -275,7 +279,7 @@ export default function GastosScreen() {
                 <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{formatoEuro(total)}</Text>
               </View>
               <View style={{ height: 6, borderRadius: 3, backgroundColor: tema.tarjetaSuave, overflow: 'hidden' }}>
-                <View style={{ height: '100%', borderRadius: 3, width: `${(total / porCategoria.max) * 100}%`, backgroundColor: cat.color }} />
+                <Barra p={total / porCategoria.max} color={cat.color} radio={3} />
               </View>
             </View>
           );
@@ -390,6 +394,9 @@ export default function GastosScreen() {
   return (
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
       <Text style={[styles.titulo, { color: tema.texto }]}>Movimientos</Text>
+      <View pointerEvents="none" style={[styles.logoCabecera, { opacity: introLista ? 1 : 0 }]}>
+        <Logo size={LOGO_CABECERA.tamano} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
+      </View>
 
       <View style={amplio ? { flex: 1, flexDirection: 'row', gap: 28 } : { flex: 1 }}>
         {amplio ? (
@@ -523,6 +530,7 @@ const styles = StyleSheet.create({
   resumenFiltro: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, gap: 8, flexWrap: 'wrap' },
   botonNuevo: { height: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   container: { flex: 1, paddingTop: arriba(60), paddingHorizontal: 16 },
+  logoCabecera: { position: 'absolute', top: arriba(60) + 2, right: LOGO_CABECERA.margen },
   titulo: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8, marginBottom: 14 },
   hero: { borderRadius: 28, padding: 22, gap: 14, overflow: 'hidden' },
   heroBrillo: { position: 'absolute', top: -70, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.10)' },

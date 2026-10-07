@@ -2,7 +2,7 @@
  * Balanz · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Children, ReactNode, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -13,6 +13,7 @@ import Animated, {
   withSequence,
   withTiming,
   ZoomIn,
+  FadeInDown,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import Presionable from './Presionable';
@@ -20,6 +21,10 @@ import { Text } from './Texto';
 import { usePreferencias } from '../accesibilidad';
 import { toque } from '../haptics';
 import { IconoNombre, RADIO, SOMBRA, useTema } from '../tema';
+import { CURVAS } from '../logo';
+import { useDisposicion } from '../layout';
+
+const SALIDA = Easing.bezier(...CURVAS.salida);
 
 /** Movimiento reducido: la preferencia de la app o la del sistema. */
 export function useQuieto(): boolean {
@@ -233,6 +238,39 @@ export function useContador(objetivo: number, duracion = 550): number {
     return () => cancelAnimationFrame(marco);
   }, [objetivo, duracion, quieto]);
   return valor;
+}
+
+/**
+ * Hace que los hijos entren uno tras otro (fundido + subida corta, 45 ms entre cada uno). Se coloca dentro del
+ * ScrollView de una pantalla; los hijos siguen siendo hijos directos del contenedor, así que el espaciado no cambia.
+ * Solo anima los primeros 8: con listas largas el resto aparece ya colocado.
+ */
+export function Escalonado({ children, paso = 45 }: { children: ReactNode; paso?: number }) {
+  const quieto = useQuieto();
+  const { amplio } = useDisposicion();
+  // En pantallas anchas la cuadrícula de CSS depende de los estilos de cada hijo directo: ahí se dejan tal cual.
+  if (amplio) return <>{children}</>;
+  return (
+    <>
+      {Children.toArray(children).map((hijo, i) => (
+        <Animated.View key={i} entering={quieto || i > 7 ? undefined : FadeInDown.delay(i * paso).duration(320).easing(SALIDA)}>
+          {hijo}
+        </Animated.View>
+      ))}
+    </>
+  );
+}
+
+/** Barra de progreso: se llena de izquierda a derecha al aparecer y cada vez que cambia el valor (0..1). */
+export function Barra({ p, color, radio = 7 }: { p: number; color: string; radio?: number }) {
+  const quieto = useQuieto();
+  const valor = useSharedValue(quieto ? p : 0);
+  useEffect(() => {
+    const destino = Math.max(0, Math.min(1, p));
+    valor.set(quieto ? destino : withTiming(destino, { duration: 700, easing: SALIDA }));
+  }, [p, quieto, valor]);
+  const estilo = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(valor.get(), 0.0001) }] }));
+  return <Animated.View style={[{ width: '100%', height: '100%', borderRadius: radio, backgroundColor: color, transformOrigin: 'left center' }, estilo]} />;
 }
 
 const styles = StyleSheet.create({
