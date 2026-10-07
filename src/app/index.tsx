@@ -17,9 +17,10 @@ import { toque } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { guardarMovimiento, eliminarMovimiento, restaurarMovimiento, duplicarMovimiento } from '../movimientos';
 import { useDisposicion, arriba } from '../layout';
-import { getCategorias, infoCategoria, formatoEuro, formatoFecha, useTema, useEsOscuro } from '../tema';
+import { getCategorias, infoCategoria, formatoEuro, formatoFecha, tintaCategoria, useTema } from '../tema';
 import GastoModal, { DatosGasto } from '../components/GastoModal';
 import Aviso from '../components/Aviso';
+import { Chip, EstadoVacio, useContador } from '../components/ui';
 import { Alert } from '../dialogos';
 import { Periodo, PERIODOS, rangoPeriodo } from '../periodo';
 
@@ -29,7 +30,7 @@ export default function GastosScreen() {
   const tema = useTema();
   const { amplio } = useDisposicion();
   const [gastos, setGastos] = useState<Gasto[]>([]);
-  const { reducirMovimiento, altoContraste, ocultarImportes } = usePreferencias();
+  const { reducirMovimiento, ocultarImportes } = usePreferencias();
   const [saldo, setSaldo] = useState(0);
   const [totalMes, setTotalMes] = useState(0);
   const [ingresosMes, setIngresosMes] = useState(0);
@@ -117,12 +118,15 @@ export default function GastosScreen() {
 
   const porcentaje = limite > 0 ? Math.min(totalMes / limite, 1) : 0;
   // El saldo se lee en blanco sobre el degradado oscuro y en negro sobre uno claro, según el modo (o el del sistema).
-  const oscuroActivo = useEsOscuro();
-  const heroClaro = !oscuroActivo && !altoContraste;
-  const tinta = altoContraste ? tema.primarioTexto : heroClaro ? '#0f172a' : '#ffffff';
-  const puntoHero = heroClaro ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.18)';
-  const barraHero = heroClaro ? 'rgba(15,23,42,0.12)' : 'rgba(255,255,255,0.25)';
-  const colorBarra = limite > 0 && totalMes > limite ? tema.peligro : porcentaje > 0.8 ? tema.aviso : tema.exito;
+  const tinta = tema.marcaTexto;
+  const heroClaro = tinta !== '#ffffff';
+  const puntoHero = heroClaro ? 'rgba(10,10,10,0.10)' : 'rgba(255,255,255,0.2)';
+  const barraHero = heroClaro ? 'rgba(10,10,10,0.14)' : 'rgba(255,255,255,0.25)';
+  // Sobre la lima los colores de estado necesitan ser más oscuros que en el resto de la app.
+  const colorBarra = limite > 0 && totalMes > limite ? '#b91c1c' : porcentaje > 0.8 ? '#b45309' : '#166534';
+  const saldoAnimado = useContador(saldo);
+  const gastadoAnimado = useContador(totalMes);
+  const ingresosAnimados = useContador(ingresosMes);
 
   const abrirNuevo = () => {
     setEditando(null);
@@ -182,7 +186,7 @@ export default function GastosScreen() {
   const heroBloque = (
       <Animated.View entering={reducirMovimiento ? undefined : FadeInDown.duration(380).easing(SALIDA)}>
         <LinearGradient
-          colors={altoContraste ? [tema.primario, tema.primario] : heroClaro ? ['#c7d2fe', '#ddd6fe'] : ['#4f46e5', '#7c3aed']}
+          colors={tema.marca}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -204,7 +208,7 @@ export default function GastosScreen() {
             accessibilityLabel={`Saldo total ${formatoEuro(saldo)}`}
             style={[styles.heroImporte, { color: tinta }]}
           >
-            {formatoEuro(saldo)}
+            {formatoEuro(saldoAnimado)}
           </Text>
           <View style={styles.heroFila}>
             <View style={styles.heroDato}>
@@ -213,7 +217,7 @@ export default function GastosScreen() {
               </View>
               <View>
                 <Text style={[styles.heroMini, { color: tinta }]}>Gastado este mes</Text>
-                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(totalMes)}</Text>
+                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(gastadoAnimado)}</Text>
               </View>
             </View>
             <View style={styles.heroDato}>
@@ -222,7 +226,7 @@ export default function GastosScreen() {
               </View>
               <View>
                 <Text style={[styles.heroMini, { color: tinta }]}>Ingresos del mes</Text>
-                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(ingresosMes)}</Text>
+                <Text style={[styles.heroMiniImporte, { color: tinta }]}>{formatoEuro(ingresosAnimados)}</Text>
               </View>
             </View>
           </View>
@@ -266,7 +270,7 @@ export default function GastosScreen() {
           return (
             <View key={nombre} style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name={cat.icono} size={16} color={cat.color} />
+                <Ionicons name={cat.icono} size={16} color={tintaCategoria(cat.color, tema.oscuro)} />
                 <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '600', flex: 1 }}>{nombre}</Text>
                 <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{formatoEuro(total)}</Text>
               </View>
@@ -318,37 +322,16 @@ export default function GastosScreen() {
       <View style={[styles.panelFiltros, { backgroundColor: tema.tarjeta }]}>
       <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Categoría</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {getCategorias().map((c) => {
-          const activa = filtro === c.nombre;
-          return (
-            <TouchableOpacity accessibilityRole="button"
-              key={c.nombre}
-              onPress={() => setFiltro(activa ? null : c.nombre)}
-              style={[styles.chip, { backgroundColor: activa ? c.color : tema.tarjeta, borderColor: tema.borde }]}
-            >
-              <Ionicons name={c.icono} size={15} color={activa ? '#fff' : c.color} />
-              <Text style={{ color: activa ? '#fff' : tema.texto, fontSize: 12, fontWeight: '600' }}>{c.nombre}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {getCategorias().map((c) => (
+          <Chip key={c.nombre} texto={c.nombre} icono={c.icono} color={c.color} activo={filtro === c.nombre} onPress={() => setFiltro(filtro === c.nombre ? null : c.nombre)} />
+        ))}
       </ScrollView>
 
       <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Fecha</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {PERIODOS.map((p) => {
-          const activa = periodo === p.id;
-          return (
-            <TouchableOpacity accessibilityRole="button"
-              accessibilityState={{ selected: activa }}
-              key={p.id}
-              onPress={() => setPeriodo(p.id)}
-              style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjeta, borderColor: tema.borde }]}
-            >
-              <Ionicons name={p.id === 'todo' ? 'infinite-outline' : 'calendar-outline'} size={14} color={activa ? tema.primarioTexto : tema.textoSuave} />
-              <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 12, fontWeight: '600' }}>{p.nombre}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {PERIODOS.map((p) => (
+          <Chip key={p.id} texto={p.nombre} icono={p.id === 'todo' ? 'infinite-outline' : 'calendar-outline'} activo={periodo === p.id} onPress={() => setPeriodo(p.id)} />
+        ))}
       </ScrollView>
 
       {periodo === 'personal' ? (
@@ -378,18 +361,9 @@ export default function GastosScreen() {
         <>
         <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Etiquetas</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {etiquetasLista.map((e) => {
-            const activa = filtroEtiqueta === e;
-            return (
-              <TouchableOpacity accessibilityRole="button"
-                key={e}
-                onPress={() => setFiltroEtiqueta(activa ? null : e)}
-                style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjeta, borderColor: tema.borde }]}
-              >
-                <Text style={{ color: activa ? tema.primarioTexto : tema.textoSuave, fontSize: 12, fontWeight: '600' }}>#{e}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {etiquetasLista.map((e) => (
+            <Chip key={e} texto={`#${e}`} activo={filtroEtiqueta === e} onPress={() => setFiltroEtiqueta(filtroEtiqueta === e ? null : e)} />
+          ))}
         </ScrollView>
         </>
       ) : null}
@@ -443,12 +417,11 @@ export default function GastosScreen() {
         contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.vacio}>
-            <Ionicons name="receipt-outline" size={48} color={tema.textoSuave} />
-            <Text style={[styles.vacioTexto, { color: tema.textoSuave }]}>
-              {gastos.length === 0 ? 'Aún no hay gastos. Pulsa + para añadir el primero.' : 'Ningún gasto coincide con el filtro.'}
-            </Text>
-          </View>
+          gastos.length === 0 ? (
+            <EstadoVacio icono="receipt-outline" titulo="Aún no hay movimientos" texto="Apunta tu primer gasto con el botón +, o importa tu Excel desde Más." accion={{ texto: 'Añadir el primero', onPress: abrirNuevo }} />
+          ) : (
+            <EstadoVacio icono="funnel-outline" titulo="Nada con esos filtros" texto="Prueba a quitar alguno o a cambiar las fechas." accion={{ texto: 'Quitar filtros', onPress: limpiarFiltros }} />
+          )
         }
         renderSectionHeader={({ section }) => (
           <View style={styles.diaCabecera}>
@@ -477,8 +450,8 @@ export default function GastosScreen() {
                 },
               ]}
             >
-              <View style={[styles.icono, { backgroundColor: (item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : cat.color) + '22' }]}>
-                <Ionicons name={item.tipo === 'traspaso' ? 'swap-horizontal-outline' : item.tipo === 'ingreso' ? 'arrow-down-circle-outline' : cat.icono} size={20} color={item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : cat.color} />
+              <View style={[styles.icono, { backgroundColor: (item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : cat.color) + '33' }]}>
+                <Ionicons name={item.tipo === 'traspaso' ? 'swap-horizontal-outline' : item.tipo === 'ingreso' ? 'arrow-down-circle-outline' : cat.icono} size={20} color={item.tipo === 'traspaso' ? tema.textoSuave : item.tipo === 'ingreso' ? tema.exito : tintaCategoria(cat.color, tema.oscuro)} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

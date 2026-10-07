@@ -14,6 +14,8 @@ type Props = Omit<PressableProps, 'style' | 'children'> & {
   contenedor?: StyleProp<ViewStyle>;
   /** Escala al pulsar; 0,97 por defecto. */
   escala?: number;
+  /** Otras propiedades de `style` que cambian con transición (p. ej. el color de fondo de un chip). */
+  animar?: string[];
   children?: ReactNode | ((estado: { pressed: boolean }) => ReactNode);
 };
 
@@ -21,7 +23,7 @@ type Props = Omit<PressableProps, 'style' | 'children'> & {
  * Botón con respuesta inmediata: al pulsar se encoge un 3 % en 120 ms (ease-out) y vuelve al soltar.
  * Con "reducir animaciones" cambia la opacidad en vez de moverse.
  */
-export default function Presionable({ style, contenedor, escala = 0.97, children, ...resto }: Props) {
+export default function Presionable({ style, contenedor, escala = 0.97, animar = [], children, ...resto }: Props) {
   const { reducirMovimiento } = usePreferencias();
   return (
     <Pressable
@@ -38,8 +40,8 @@ export default function Presionable({ style, contenedor, escala = 0.97, children
               reducirMovimiento
                 ? { opacity: pressed ? 0.7 : 1 }
                 : {
-                    transitionProperty: 'transform',
-                    transitionDuration: 120,
+                    transitionProperty: ['transform', ...animar],
+                    transitionDuration: 140,
                     transitionTimingFunction: 'ease-out',
                     transform: [{ scale: pressed ? escala : 1 }],
                   },

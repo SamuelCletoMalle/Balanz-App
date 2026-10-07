@@ -1,0 +1,246 @@
+/**
+ * Balanz · control de gastos personales
+ * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
+ */
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import Presionable from './Presionable';
+import { Text } from './Texto';
+import { usePreferencias } from '../accesibilidad';
+import { toque } from '../haptics';
+import { IconoNombre, RADIO, SOMBRA, useTema } from '../tema';
+
+/** Movimiento reducido: la preferencia de la app o la del sistema. */
+export function useQuieto(): boolean {
+  const sistema = useReducedMotion();
+  const { reducirMovimiento } = usePreferencias();
+  return sistema || reducirMovimiento;
+}
+
+/** Tarjeta base: superficie de nivel 1, radio grande, borde fino y sombra suave solo en claro. */
+export function Tarjeta({ children, style, nivel = 1 }: { children: ReactNode; style?: StyleProp<ViewStyle>; nivel?: 1 | 2 | 3 }) {
+  const tema = useTema();
+  const fondo = nivel === 1 ? tema.tarjeta : nivel === 2 ? tema.tarjetaSuave : tema.elevada;
+  return (
+    <View style={[styles.tarjeta, { backgroundColor: fondo, borderColor: tema.borde }, !tema.oscuro && nivel === 1 ? SOMBRA.s : null, style]}>
+      {children}
+    </View>
+  );
+}
+
+type VarianteBoton = 'primario' | 'secundario' | 'fantasma' | 'peligro';
+
+/**
+ * Botón de la marca. `cargando` enseña una rueda y `exito` un check que aparece con un pequeño rebote.
+ * Siempre tiene como mínimo 52 pt de alto (objetivo táctil cómodo con una mano).
+ */
+export function Boton({
+  texto,
+  onPress,
+  variante = 'primario',
+  icono,
+  cargando,
+  exito,
+  deshabilitado,
+  contenedor,
+}: {
+  texto: string;
+  onPress: () => void;
+  variante?: VarianteBoton;
+  icono?: IconoNombre;
+  cargando?: boolean;
+  exito?: boolean;
+  deshabilitado?: boolean;
+  contenedor?: StyleProp<ViewStyle>;
+}) {
+  const tema = useTema();
+  const quieto = useQuieto();
+  const colores = {
+    primario: { fondo: tema.primario, texto: tema.primarioTexto, borde: 'transparent' },
+    secundario: { fondo: tema.tarjetaSuave, texto: tema.texto, borde: tema.borde },
+    fantasma: { fondo: 'transparent', texto: tema.texto, borde: 'transparent' },
+    peligro: { fondo: tema.peligro, texto: '#ffffff', borde: 'transparent' },
+  }[variante];
+  const inactivo = deshabilitado || cargando;
+  return (
+    <Presionable
+      accessibilityLabel={texto}
+      accessibilityState={{ disabled: !!inactivo, busy: !!cargando }}
+      disabled={inactivo}
+      contenedor={contenedor}
+      onPress={() => {
+        toque();
+        onPress();
+      }}
+      style={[styles.boton, { backgroundColor: colores.fondo, borderColor: colores.borde, opacity: deshabilitado ? 0.45 : 1 }]}
+    >
+      {cargando ? (
+        <ActivityIndicator color={colores.texto} />
+      ) : exito ? (
+        <Animated.View entering={quieto ? undefined : ZoomIn.springify().damping(12)}>
+          <Ionicons name="checkmark-circle" size={22} color={colores.texto} />
+        </Animated.View>
+      ) : (
+        <>
+          {icono ? <Ionicons name={icono} size={20} color={colores.texto} /> : null}
+          <Text style={{ color: colores.texto, fontSize: 16, fontWeight: '700' }}>{texto}</Text>
+        </>
+      )}
+    </Presionable>
+  );
+}
+
+/** Filtro o etiqueta seleccionable. El color de fondo cambia con una transición corta. */
+export function Chip({
+  texto,
+  icono,
+  activo,
+  color,
+  onPress,
+}: {
+  texto: string;
+  icono?: IconoNombre;
+  activo?: boolean;
+  /** Color propio cuando está activo (las categorías); por defecto, el primario. */
+  color?: string;
+  onPress: () => void;
+}) {
+  const tema = useTema();
+  const fondo = activo ? (color ?? tema.primario) : tema.tarjeta;
+  const tinta = activo ? (color ? '#ffffff' : tema.primarioTexto) : tema.texto;
+  return (
+    <Presionable
+      accessibilityLabel={texto}
+      accessibilityState={{ selected: !!activo }}
+      onPress={() => {
+        toque();
+        onPress();
+      }}
+      animar={['backgroundColor', 'borderColor']}
+      contenedor={{ marginRight: 8 }}
+      style={[styles.chip, { backgroundColor: fondo, borderColor: activo ? 'transparent' : tema.borde }]}
+    >
+      {icono ? <Ionicons name={icono} size={15} color={activo ? tinta : (color ?? tema.textoSuave)} /> : null}
+      <Text style={{ color: tinta, fontSize: 13, fontWeight: '600' }}>{texto}</Text>
+    </Presionable>
+  );
+}
+
+/** Interruptor con el pulgar deslizándose y el color del fondo cambiando a la vez. */
+export function Interruptor({ valor, onChange, etiqueta }: { valor: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
+  const tema = useTema();
+  const quieto = useQuieto();
+  const transicion = quieto ? {} : { transitionProperty: ['backgroundColor', 'transform'], transitionDuration: 180, transitionTimingFunction: 'ease-out' };
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={etiqueta}
+      accessibilityState={{ checked: valor }}
+      hitSlop={10}
+      onPress={() => {
+        toque();
+        onChange(!valor);
+      }}
+    >
+      <Animated.View style={[styles.pista, { backgroundColor: valor ? tema.primario : tema.tarjetaSuave, borderColor: tema.borde }, transicion as ViewStyle]}>
+        <Animated.View
+          style={[
+            styles.pulgar,
+            { backgroundColor: valor ? tema.primarioTexto : tema.textoSuave, transform: [{ translateX: valor ? 20 : 0 }] },
+            transicion as ViewStyle,
+          ]}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/** Bloque gris con un brillo que va y viene mientras se cargan los datos. Quieto si se reduce el movimiento. */
+export function Esqueleto({ ancho = '100%', alto = 16, radio = 8, style }: { ancho?: number | `${number}%`; alto?: number; radio?: number; style?: StyleProp<ViewStyle> }) {
+  const tema = useTema();
+  const quieto = useQuieto();
+  const brillo = useSharedValue(0.55);
+  useEffect(() => {
+    if (quieto) return;
+    brillo.set(withRepeat(withSequence(withTiming(1, { duration: 750, easing: Easing.inOut(Easing.quad) }), withTiming(0.55, { duration: 750, easing: Easing.inOut(Easing.quad) })), -1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quieto]);
+  const estilo = useAnimatedStyle(() => ({ opacity: quieto ? 0.8 : brillo.get() }));
+  return <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ width: ancho, height: alto, borderRadius: radio, backgroundColor: tema.tarjetaSuave }, estilo, style]} />;
+}
+
+/** Pantalla o lista sin datos: icono que flota despacio, un título claro y, si hay, una acción. */
+export function EstadoVacio({ icono, titulo, texto, accion }: { icono: IconoNombre; titulo: string; texto?: string; accion?: { texto: string; onPress: () => void } }) {
+  const tema = useTema();
+  const quieto = useQuieto();
+  const flota = useSharedValue(0);
+  useEffect(() => {
+    if (quieto) return;
+    flota.set(withRepeat(withSequence(withTiming(-5, { duration: 1600, easing: Easing.inOut(Easing.quad) }), withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.quad) })), -1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quieto]);
+  const estilo = useAnimatedStyle(() => ({ transform: [{ translateY: flota.get() }] }));
+  return (
+    <View style={styles.vacio}>
+      <Animated.View style={[styles.vacioIcono, { backgroundColor: tema.tarjetaSuave }, estilo]}>
+        <Ionicons name={icono} size={34} color={tema.textoSuave} />
+      </Animated.View>
+      <Text style={{ color: tema.texto, fontSize: 17, fontWeight: '700', textAlign: 'center' }}>{titulo}</Text>
+      {texto ? <Text style={{ color: tema.textoSuave, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>{texto}</Text> : null}
+      {accion ? <Boton texto={accion.texto} onPress={accion.onPress} variante="secundario" contenedor={{ alignSelf: 'stretch', marginTop: 6 }} /> : null}
+    </View>
+  );
+}
+
+/**
+ * Cifra que rueda hasta su nuevo valor. Es el único sitio donde se anima con estado de React: son ~500 ms, una vez
+ * al cambiar el saldo o un total, y con "reducir movimiento" salta directamente al valor final.
+ */
+export function useContador(objetivo: number, duracion = 550): number {
+  const quieto = useQuieto();
+  const [valor, setValor] = useState(objetivo);
+  const actual = useRef(objetivo);
+  useEffect(() => {
+    if (quieto || actual.current === objetivo) {
+      actual.current = objetivo;
+      setValor(objetivo);
+      return;
+    }
+    const desde = actual.current;
+    const inicio = Date.now();
+    let marco = 0;
+    const paso = () => {
+      const p = Math.min(1, (Date.now() - inicio) / duracion);
+      const suave = 1 - Math.pow(1 - p, 3);
+      const v = desde + (objetivo - desde) * suave;
+      actual.current = v;
+      setValor(v);
+      if (p < 1) marco = requestAnimationFrame(paso);
+      else actual.current = objetivo;
+    };
+    marco = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(marco);
+  }, [objetivo, duracion, quieto]);
+  return valor;
+}
+
+const styles = StyleSheet.create({
+  tarjeta: { borderRadius: RADIO.tarjeta, borderWidth: StyleSheet.hairlineWidth, padding: 18, gap: 14 },
+  boton: { minHeight: 52, borderRadius: RADIO.boton, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIO.chip, borderWidth: 1 },
+  pista: { width: 52, height: 32, borderRadius: 16, borderWidth: 1, padding: 3, justifyContent: 'center' },
+  pulgar: { width: 24, height: 24, borderRadius: 12 },
+  vacio: { alignItems: 'center', gap: 10, paddingVertical: 48, paddingHorizontal: 28 },
+  vacioIcono: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+});

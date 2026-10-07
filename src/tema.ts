@@ -32,6 +32,13 @@ export function getCategorias(): Categoria[] {
   return [...CATEGORIAS_BASE.slice(0, -1), ...categoriasExtra, otros];
 }
 
+/** Las categorías usan tonos oscuros (para llevar texto blanco encima); sobre fondo oscuro se mezclan con blanco para que el icono se vea. */
+export function tintaCategoria(color: string, oscuro: boolean): string {
+  if (!oscuro || !/^#[0-9a-fA-F]{6}$/.test(color)) return color;
+  const mezcla = (i: number) => Math.round(parseInt(color.slice(i, i + 2), 16) * 0.45 + 255 * 0.55).toString(16).padStart(2, '0');
+  return `#${mezcla(1)}${mezcla(3)}${mezcla(5)}`;
+}
+
 export function infoCategoria(nombre: string): Categoria {
   const todas = getCategorias();
   return todas.find((c) => c.nombre === nombre) ?? todas[todas.length - 1];
@@ -107,8 +114,8 @@ const oscuro: Tema = {
   exito: '#4ade80',
   aviso: '#fbbf24',
   sombra: '#000000',
-  marca: ['#27272a', '#09090b'],
-  marcaTexto: '#fafafa',
+  marca: ['#d9f99d', '#bef264'],
+  marcaTexto: '#0a0a0a',
   vidrio: 'rgba(20,20,22,0.74)',
   oscuro: true,
 };
@@ -142,6 +149,7 @@ const oscuroContraste: Tema = {
   exito: '#86efac',
   aviso: '#fde68a',
   marca: ['#000000', '#000000'],
+  marcaTexto: '#ffffff',
   vidrio: '#000000',
 };
 
