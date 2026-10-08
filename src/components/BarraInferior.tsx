@@ -11,7 +11,7 @@ import { Text } from './Texto';
 import { useQuieto } from './ui';
 import { seleccion } from '../haptics';
 import { pestanaActiva } from '../navegacion';
-import { IconoNombre, SOMBRA, useTema } from '../tema';
+import { IconoNombre, useTema } from '../tema';
 
 const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
   index: ['home-outline', 'home'],
@@ -24,7 +24,7 @@ const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
 const MARGEN = 4;
 
 /**
- * Barra inferior del móvil: una pastilla de vidrio con un indicador que se desliza hasta la pestaña elegida.
+ * Barra inferior del móvil: pegada al borde de abajo, de vidrio, con un indicador que se desliza hasta la pestaña elegida.
  * Está en el flujo normal (no tapa el contenido) y respeta la barra de gestos del sistema.
  */
 export default function BarraInferior({ state, descriptors, navigation, insets }: BottomTabBarProps) {
@@ -54,12 +54,8 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
       : {};
 
   return (
-    <View style={[styles.contenedor, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
-      <View
-        onLayout={(e) => setAncho(e.nativeEvent.layout.width)}
-        style={[styles.pastilla, { backgroundColor: tema.vidrio, borderColor: tema.borde }, SOMBRA.m, vidrio]}
-        accessibilityRole="tablist"
-      >
+    <View style={[styles.contenedor, { paddingBottom: insets.bottom, backgroundColor: tema.vidrio, borderColor: tema.borde }, vidrio]}>
+      <View onLayout={(e) => setAncho(e.nativeEvent.layout.width)} style={styles.pastilla} accessibilityRole="tablist">
         {hueco > 0 ? (
           <Animated.View
             pointerEvents="none"
@@ -109,9 +105,9 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
 }
 
 const styles = StyleSheet.create({
-  contenedor: { paddingHorizontal: 10, paddingTop: 6 },
-  pastilla: { flexDirection: 'row', height: 66, borderRadius: 33, borderWidth: StyleSheet.hairlineWidth, padding: MARGEN, overflow: 'hidden' },
-  indicador: { position: 'absolute', top: MARGEN, bottom: MARGEN, left: MARGEN, borderRadius: 27 },
+  contenedor: { paddingHorizontal: 8, paddingTop: 6, borderTopWidth: StyleSheet.hairlineWidth },
+  pastilla: { flexDirection: 'row', height: 58, padding: MARGEN },
+  indicador: { position: 'absolute', top: MARGEN, bottom: MARGEN, left: MARGEN, borderRadius: 22 },
   pestana: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   insignia: { position: 'absolute', top: -6, right: -10, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
 });
