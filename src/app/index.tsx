@@ -12,6 +12,7 @@ import { LOGO_CABECERA } from '../components/Intro';
 import TarjetaSaldo from '../components/TarjetaSaldo';
 import GastoPorCategoria from '../components/GastoPorCategoria';
 import BotonNuevo from '../components/BotonNuevo';
+import CampanaPendientes from '../components/CampanaPendientes';
 import Presionable from '../components/Presionable';
 import { Boton, Escalonado, Tarjeta } from '../components/ui';
 import { useIntroLista } from '../intro-estado';
@@ -95,9 +96,7 @@ export default function InicioScreen() {
         style={[styles.aviso, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}
         onPress={() => router.push('/pendientes')}
       >
-        <View style={[styles.avisoIcono, { backgroundColor: tema.acento }]}>
-          <Ionicons name="notifications" size={18} color={tema.acentoTexto} />
-        </View>
+        <CampanaPendientes n={pendientes} tam={38} fondo={tema.acento} color={tema.acentoTexto} estilo={{ borderRadius: 13 }} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: tema.texto, fontSize: 15, fontWeight: '700' }}>{pendientes === 1 ? '1 pago por revisar' : `${pendientes} pagos por revisar`}</Text>
           <Text style={{ color: tema.textoSuave, fontSize: 12 }}>Detectados desde tus atajos o SMS</Text>

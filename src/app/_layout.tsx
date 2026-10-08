@@ -22,6 +22,7 @@ import Intro from '../components/Intro';
 import BarraInferior from '../components/BarraInferior';
 import BarraLateral from '../components/BarraLateral';
 import HojaNuevoMovimiento from '../components/HojaNuevoMovimiento';
+import AlertaLimite from '../components/AlertaLimite';
 import { DisolverTema } from '../components/ui';
 import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
@@ -173,6 +174,7 @@ export default function RootLayout() {
       <>
         <StatusBar style="auto" />
         <HojaNuevoMovimiento />
+        <AlertaLimite />
         <Tabs
           backBehavior="history"
           tabBar={(props) => (escritorio ? <BarraLateral {...props} /> : <BarraInferior {...props} />)}

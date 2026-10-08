@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { getGastos, getEtiquetas, contarPendientes, Gasto, nombreCuenta } from '../db';
 import Presionable from '../components/Presionable';
+import CampanaPendientes from '../components/CampanaPendientes';
 import { exito } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { guardarMovimiento, eliminarMovimiento, restaurarMovimiento, duplicarMovimiento } from '../movimientos';
@@ -68,8 +69,9 @@ function FilaDeslizable({ children, tema, onBorrar, onDuplicar }: { children: Re
         deslizadoEn = Date.now();
         ref.current?.close();
         exito();
-        if (direccion === 'left') onDuplicar?.();
-        else onBorrar();
+        // 'left' = se ha arrastrado hacia la izquierda (aparece la papelera); 'right' = hacia la derecha (duplicar).
+        if (direccion === 'left') onBorrar();
+        else onDuplicar?.();
       }}
     >
       {children}
@@ -336,7 +338,7 @@ export default function GastosScreen() {
       </View>
       {pendientes > 0 ? (
         <Presionable accessibilityLabel={`${pendientes} pagos por revisar`} contenedor={{ marginBottom: 12 }} style={[styles.avisoPendientes, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]} onPress={() => router.push('/pendientes')}>
-          <Ionicons name="notifications" size={20} color={tema.oscuro ? tema.acento : tema.texto} />
+          <CampanaPendientes n={pendientes} tam={30} color={tema.oscuro ? tema.acento : tema.texto} />
           <Text style={{ flex: 1, color: tema.texto, fontSize: 14, fontWeight: '600' }}>{pendientes === 1 ? 'Tienes 1 pago por revisar' : `Tienes ${pendientes} pagos por revisar`}</Text>
           <Ionicons name="chevron-forward" size={18} color={tema.textoSuave} />
         </Presionable>

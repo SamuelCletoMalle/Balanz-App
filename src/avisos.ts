@@ -5,7 +5,8 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { getConfig, setConfig, getLimite, getPresupuestosCategoria, getTotalMesActual, getGastosPorCategoriaMesActual, mesActual } from './db';
-import { formatoEuro } from './tema';
+import { formatoEuro, infoCategoria } from './tema';
+import { mostrarAlertaLimite } from './alerta-limite';
 import { ritmoExcesivo } from './evolucion';
 
 type ModuloNotificaciones = typeof import('expo-notifications');
@@ -83,7 +84,6 @@ export function avisarPendientesNuevos(n: number) {
 
 /** Avisa al cruzar el 80 % y el 100 % del presupuesto global o de una categoría (una vez por mes y umbral). */
 export function comprobarPresupuestos() {
-  if (!avisosActivados()) return;
   const mes = mesActual();
 
   const revisar = (clave: string, nombre: string, gastado: number, limite: number) => {
@@ -95,6 +95,18 @@ export function comprobarPresupuestos() {
     const previo = parseInt(getConfig(marca) ?? '0', 10);
     if (previo >= umbral) return;
     setConfig(marca, String(umbral));
+    // Al pasarte del límite sale además un aviso en mitad de la pantalla (aunque las notificaciones estén apagadas).
+    if (umbral === 100) {
+      const categoria = clave.startsWith('cat:') ? infoCategoria(nombre) : null;
+      mostrarAlertaLimite({
+        id: marca,
+        titulo: categoria ? `Has superado el límite de ${nombre}` : 'Has superado el límite del mes',
+        icono: categoria ? categoria.icono : 'wallet-outline',
+        color: categoria ? categoria.color : null,
+        gastado,
+        limite,
+      });
+    }
     notificar(
       umbral === 100 ? `Has superado el presupuesto de ${nombre}` : `Llevas el 80 % del presupuesto de ${nombre}`,
       `${formatoEuro(gastado)} de ${formatoEuro(limite)} este mes.`

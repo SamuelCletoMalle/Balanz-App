@@ -21,6 +21,7 @@ import { exportarCopia, elegirYRestaurarCopia } from '../copia';
 import { supabase } from '../supabase';
 import { borrarTodosLosGastosDeLaNube, subirPerfil } from '../sync';
 import { activarAvisos, avisosActivados, pedirPermisoAvisos } from '../avisos';
+import { activarSonidoCampana, activarVibracionCampana, sonarCampana, sonidoCampanaActivado, vibracionCampanaActivada } from '../campana';
 import { autenticar, biometriaDisponible, bloqueoActivado, guardarBloqueo } from '../seguridad';
 import { useTema, Tema, IconoNombre, formatoEuro } from '../tema';
 import { cambiarPreferencias, usePreferencias, ModoTema, TamanoTexto } from '../accesibilidad';
@@ -139,6 +140,8 @@ export default function MasScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [bloqueo, setBloqueo] = useState(bloqueoActivado());
   const [avisos, setAvisos] = useState(avisosActivados());
+  const [campanaSonido, setCampanaSonido] = useState(sonidoCampanaActivado());
+  const [campanaVibracion, setCampanaVibracion] = useState(vibracionCampanaActivada());
   const [fondosAbierto, setFondosAbierto] = useState(false);
   const [fondosTexto, setFondosTexto] = useState(() => fondosATexto(getFondosIniciales()));
   const [fondosTotal, setFondosTotal] = useState(() => sumaFondos(getFondosIniciales()));
@@ -466,6 +469,40 @@ export default function MasScreen() {
           titulo="Notificaciones"
           detalle="Pagos detectados y avisos de presupuesto"
           derecha={<Interruptor etiqueta="Notificaciones" valor={avisos} onChange={cambiarAvisos} />}
+        />
+        <Fila
+          tema={tema}
+          icono="volume-high-outline"
+          titulo="Sonido de la campanita"
+          detalle="Suena cuando hay pagos por revisar"
+          derecha={
+            <Interruptor
+              etiqueta="Sonido de la campanita"
+              valor={campanaSonido}
+              onChange={(on) => {
+                activarSonidoCampana(on);
+                setCampanaSonido(on);
+                if (on) sonarCampana();
+              }}
+            />
+          }
+        />
+        <Fila
+          tema={tema}
+          icono="phone-portrait-outline"
+          titulo="Vibración de la campanita"
+          detalle="Un toque suave cuando se mueve"
+          derecha={
+            <Interruptor
+              etiqueta="Vibración de la campanita"
+              valor={campanaVibracion}
+              onChange={(on) => {
+                activarVibracionCampana(on);
+                setCampanaVibracion(on);
+                if (on) toque();
+              }}
+            />
+          }
           ultimo
         />
       </View>
