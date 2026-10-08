@@ -378,12 +378,8 @@ export default function MasScreen() {
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Fila tema={tema} icono="wallet-outline" titulo="Saldo disponible" detalle={`Ahora: ${formatoEuro(saldoActual)} · toca para ajustarlo`} onPress={abrirSaldo} />
         <Fila tema={tema} icono="cash-outline" titulo="Dinero inicial" detalle={fondosTotal > 0 ? `Empezaste con ${formatoEuro(fondosTotal)}` : 'Indica con cuánto dinero empiezas'} onPress={abrirFondos} />
-        <Fila tema={tema} icono="repeat-outline" titulo="Recurrentes" detalle={`${cuentas.recurrentes} programados · suscripciones detectadas`} onPress={() => router.push('/recurrentes')} />
-        <Fila tema={tema} icono="flag-outline" titulo="Metas de ahorro" detalle={`${cuentas.metas} metas`} onPress={() => router.push('/metas')} />
         <Fila tema={tema} icono="people-outline" titulo="Gastos compartidos" detalle="Quién te debe" onPress={() => router.push('/compartidos')} />
-        <Fila tema={tema} icono="document-text-outline" titulo="Informe mensual" detalle="Comparativa y PDF" onPress={() => router.push('/informe')} />
-        <Fila tema={tema} icono="color-palette-outline" titulo="Mis categorías" detalle="Crea las tuyas: Mascotas, Regalos…" onPress={() => router.push('/categorias')} />
-        <Fila tema={tema} icono="sparkles-outline" titulo="Categorías aprendidas" detalle={`${cuentas.reglas} comercios recordados`} onPress={() => router.push('/reglas')} ultimo />
+        <Fila tema={tema} icono="color-palette-outline" titulo="Categorías" detalle={`Las tuyas y ${cuentas.reglas} ${cuentas.reglas === 1 ? "comercio" : "comercios"} que Balanz ya recuerda`} onPress={() => router.push('/categorias')} ultimo />
       </View>
       </View>
 

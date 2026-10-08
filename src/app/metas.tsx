@@ -8,7 +8,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoiding
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
 import { Alert } from '../dialogos';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { getMetas, insertMeta, updateMeta, deleteMeta, NOMBRES_MES, Meta } from '../db';
@@ -19,7 +19,7 @@ import { Escalonado, Barra } from '../components/ui';
 
 const ICONOS: IconoNombre[] = ['airplane-outline', 'home-outline', 'car-outline', 'laptop-outline', 'gift-outline', 'school-outline', 'shield-checkmark-outline', 'flag-outline'];
 
-export default function MetasScreen() {
+export function MetasContenido({ embebido = false }: { embebido?: boolean }) {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const router = useRouter();
@@ -98,18 +98,25 @@ export default function MetasScreen() {
   const totalAhorrado = metas.reduce((s, m) => s + m.ahorrado, 0);
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
-      <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
-        <Ionicons name="chevron-back" size={22} color={tema.primario} />
-        <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: tema.fondo }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
+      {embebido ? null : (
+        <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
+          <Ionicons name="chevron-back" size={22} color={tema.primario} />
+          <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.cabecera}>
-        <Text style={[styles.titulo, { color: tema.texto }]}>Metas de ahorro</Text>
+        {embebido ? (
+          <Text style={{ flex: 1, color: tema.textoSuave, fontSize: 14, paddingRight: 12 }}>
+            {metas.length > 0 ? `Llevas ahorrado ${formatoEuro(totalAhorrado)} en total.` : 'Tus objetivos de ahorro.'}
+          </Text>
+        ) : null}
+        {embebido ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Metas de ahorro</Text>}
         <TouchableOpacity accessibilityRole="button" style={[styles.nuevo, { backgroundColor: tema.primario }]} accessibilityLabel="Nueva meta" onPress={() => abrir(null)}>
           <Ionicons name="add" size={22} color={tema.primarioTexto} />
         </TouchableOpacity>
       </View>
-      {metas.length > 0 ? (
+      {!embebido && metas.length > 0 ? (
         <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 6 }}>Llevas ahorrado {formatoEuro(totalAhorrado)} en total.</Text>
       ) : null}
 
@@ -296,3 +303,7 @@ const styles = StyleSheet.create({
   iconoElegir: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   boton: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
 });
+
+export default function MetasScreen() {
+  return <Redirect href="/planes?vista=metas" />;
+}

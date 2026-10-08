@@ -10,12 +10,14 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import Logo from './Logo';
 import { Text } from './Texto';
 import { useQuieto } from './ui';
+import { pestanaActiva } from '../navegacion';
 import { IconoNombre, useTema } from '../tema';
 import { useIntroLista } from '../intro-estado';
 
 const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
-  index: ['wallet-outline', 'wallet'],
-  pendientes: ['notifications-outline', 'notifications'],
+  index: ['home-outline', 'home'],
+  movimientos: ['swap-vertical-outline', 'swap-vertical'],
+  planes: ['calendar-outline', 'calendar'],
   presupuesto: ['pie-chart-outline', 'pie-chart'],
   ajustes: ['grid-outline', 'grid'],
 };
@@ -29,7 +31,8 @@ export default function BarraLateral({ state, descriptors, navigation }: BottomT
   const quieto = useQuieto();
   const introLista = useIntroLista();
   const visibles = state.routes.filter((r) => StyleSheet.flatten(descriptors[r.key].options.tabBarItemStyle)?.display !== 'none');
-  const indice = Math.max(0, visibles.findIndex((r) => r.key === state.routes[state.index].key));
+  const activaNombre = pestanaActiva(state.routes[state.index].name);
+  const indice = Math.max(0, visibles.findIndex((r) => r.name === activaNombre));
   const y = useSharedValue(indice * (ALTO_ITEM + SEPARACION));
   const colocado = useRef(false);
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function BarraLateral({ state, descriptors, navigation }: BottomT
               accessibilityState={{ selected: activa }}
               onPress={() => {
                 const evento = navigation.emit({ type: 'tabPress', target: ruta.key, canPreventDefault: true });
-                if (!activa && !evento.defaultPrevented) navigation.navigate(ruta.name, ruta.params);
+                if (state.routes[state.index].key !== ruta.key && !evento.defaultPrevented) navigation.navigate(ruta.name, ruta.params);
               }}
               style={({ hovered }: { hovered?: boolean }) => [styles.item, !activa && hovered ? { backgroundColor: tema.tarjetaSuave } : null]}
             >

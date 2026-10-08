@@ -21,6 +21,7 @@ import Bloqueo from '../components/Bloqueo';
 import Intro from '../components/Intro';
 import BarraInferior from '../components/BarraInferior';
 import BarraLateral from '../components/BarraLateral';
+import HojaNuevoMovimiento from '../components/HojaNuevoMovimiento';
 import { DisolverTema } from '../components/ui';
 import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
@@ -35,7 +36,7 @@ import type { Session } from '@supabase/supabase-js';
 // El splash nativo se queda hasta que las fuentes están listas, para que no haya un salto de tipografía.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const OCULTAS = ['categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
+const OCULTAS = ['pendientes', 'categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
 
 function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefined> {
   return Promise.race([promesa, new Promise<undefined>((resolver) => setTimeout(() => resolver(undefined), ms))]);
@@ -171,6 +172,7 @@ export default function RootLayout() {
     contenido = (
       <>
         <StatusBar style="auto" />
+        <HojaNuevoMovimiento />
         <Tabs
           backBehavior="history"
           tabBar={(props) => (escritorio ? <BarraLateral {...props} /> : <BarraInferior {...props} />)}
@@ -197,36 +199,11 @@ export default function RootLayout() {
             sceneStyle: { backgroundColor: tema.fondo },
           }}
         >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Movimientos',
-              tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="pendientes"
-            options={{
-              title: 'Pendientes',
-              tabBarBadge: pendientes > 0 ? pendientes : undefined,
-              tabBarBadgeStyle: { backgroundColor: tema.peligro, color: '#fff' },
-              tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={size} color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="presupuesto"
-            options={{
-              title: 'Resumen',
-              tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'pie-chart' : 'pie-chart-outline'} size={size} color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="ajustes"
-            options={{
-              title: 'Más',
-              tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'grid' : 'grid-outline'} size={size} color={color} />,
-            }}
-          />
+          <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
+          <Tabs.Screen name="movimientos" options={{ title: 'Movimientos' }} />
+          <Tabs.Screen name="planes" options={{ title: 'Planes' }} />
+          <Tabs.Screen name="presupuesto" options={{ title: 'Resumen' }} />
+          <Tabs.Screen name="ajustes" options={{ title: 'Más' }} />
           {OCULTAS.map((nombre) => (
             <Tabs.Screen key={nombre} name={nombre} options={nombre === 'bienvenida' ? { href: null, tabBarStyle: { display: 'none' } } : { href: null }} />
           ))}

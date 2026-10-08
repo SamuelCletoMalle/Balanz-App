@@ -4,7 +4,7 @@
  */
 import { useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Texto';
 import NuevaCategoria from '../components/NuevaCategoria';
@@ -14,10 +14,17 @@ import { subirPerfil } from '../sync';
 import { getCategorias, useTema } from '../tema';
 import { arriba } from '../layout';
 import { Escalonado } from '../components/ui';
+import { Segmentos } from '../components/ui';
+import { ReglasContenido } from './reglas';
+
+type Vista = 'mias' | 'aprendidas';
 
 export default function CategoriasScreen() {
   const tema = useTema();
   const router = useRouter();
+  const { vista: pedida } = useLocalSearchParams<{ vista?: string }>();
+  const [elegida, setElegida] = useState<{ para?: string; v: Vista } | null>(null);
+  const vista: Vista = elegida && elegida.para === pedida ? elegida.v : pedida === 'aprendidas' ? 'aprendidas' : 'mias';
   const [, refrescar] = useState(0);
   const [creando, setCreando] = useState(false);
 
@@ -45,10 +52,13 @@ export default function CategoriasScreen() {
       </TouchableOpacity>
       <View style={styles.cabecera}>
         <Text style={[styles.titulo, { color: tema.texto }]}>Categorías</Text>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva categoría" style={[styles.nuevo, { backgroundColor: tema.primario }]} onPress={() => setCreando((v) => !v)}>
+        {vista === 'aprendidas' ? null : <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva categoría" style={[styles.nuevo, { backgroundColor: tema.primario }]} onPress={() => setCreando((v) => !v)}>
           <Ionicons name={creando ? 'close' : 'add'} size={22} color={tema.primarioTexto} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
+      <Segmentos<Vista> opciones={[{ id: 'mias', texto: 'Mis categorías' }, { id: 'aprendidas', texto: 'Aprendidas' }]} valor={vista} onChange={(v) => setElegida({ para: pedida, v })} />
+      <View style={{ height: 12 }} />
+      {vista === 'aprendidas' ? <ReglasContenido embebido /> : <>
       <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 8 }}>
         Las que vienen de serie no se pueden borrar. Crea las tuyas (Mascotas, Regalos, Niños…) y salen al apuntar un gasto.
       </Text>
@@ -84,6 +94,7 @@ export default function CategoriasScreen() {
         </View>
       </Escalonado>
 </ScrollView>
+      </>}
     </View>
   );
 }

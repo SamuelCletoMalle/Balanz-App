@@ -10,16 +10,18 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Text } from './Texto';
 import { useQuieto } from './ui';
 import { seleccion } from '../haptics';
+import { pestanaActiva } from '../navegacion';
 import { IconoNombre, SOMBRA, useTema } from '../tema';
 
 const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
-  index: ['wallet-outline', 'wallet'],
-  pendientes: ['notifications-outline', 'notifications'],
+  index: ['home-outline', 'home'],
+  movimientos: ['swap-vertical-outline', 'swap-vertical'],
+  planes: ['calendar-outline', 'calendar'],
   presupuesto: ['pie-chart-outline', 'pie-chart'],
   ajustes: ['grid-outline', 'grid'],
 };
 
-const MARGEN = 6;
+const MARGEN = 4;
 
 /**
  * Barra inferior del móvil: una pastilla de vidrio con un indicador que se desliza hasta la pestaña elegida.
@@ -30,7 +32,8 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
   const quieto = useQuieto();
   const [ancho, setAncho] = useState(0);
   const visibles = state.routes.filter((r) => StyleSheet.flatten(descriptors[r.key].options.tabBarItemStyle)?.display !== 'none');
-  const indice = Math.max(0, visibles.findIndex((r) => r.key === state.routes[state.index].key));
+  const activaNombre = pestanaActiva(state.routes[state.index].name);
+  const indice = Math.max(0, visibles.findIndex((r) => r.name === activaNombre));
   const hueco = visibles.length > 0 ? Math.max(0, ancho - MARGEN * 2) / visibles.length : 0;
 
   const x = useSharedValue(0);
@@ -79,7 +82,7 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
               style={styles.pestana}
               onPress={() => {
                 const evento = navigation.emit({ type: 'tabPress', target: ruta.key, canPreventDefault: true });
-                if (!activa && !evento.defaultPrevented) {
+                if (state.routes[state.index].key !== ruta.key && !evento.defaultPrevented) {
                   seleccion();
                   navigation.navigate(ruta.name, ruta.params);
                 }
@@ -94,7 +97,7 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
                   </View>
                 ) : null}
               </View>
-              <Text style={{ color, fontSize: 11, fontWeight: activa ? '700' : '500' }} numberOfLines={1}>
+              <Text style={{ color, fontSize: 10.5, fontWeight: activa ? '700' : '500', letterSpacing: -0.1 }} numberOfLines={1}>
                 {titulo}
               </Text>
             </Pressable>
@@ -106,7 +109,7 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
 }
 
 const styles = StyleSheet.create({
-  contenedor: { paddingHorizontal: 16, paddingTop: 6 },
+  contenedor: { paddingHorizontal: 10, paddingTop: 6 },
   pastilla: { flexDirection: 'row', height: 66, borderRadius: 33, borderWidth: StyleSheet.hairlineWidth, padding: MARGEN, overflow: 'hidden' },
   indicador: { position: 'absolute', top: MARGEN, bottom: MARGEN, left: MARGEN, borderRadius: 27 },
   pestana: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },

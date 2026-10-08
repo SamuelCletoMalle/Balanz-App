@@ -6,13 +6,13 @@ import { useState, useCallback } from 'react';
 import { arriba } from '../layout';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '../components/Texto';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getReglas, borrarRegla } from '../db';
 import { infoCategoria, useTema } from '../tema';
 import { Escalonado } from '../components/ui';
 
-export default function ReglasScreen() {
+export function ReglasContenido({ embebido = false }: { embebido?: boolean }) {
   const tema = useTema();
   const router = useRouter();
   const [reglas, setReglas] = useState<{ clave: string; categoria: string }[]>([]);
@@ -20,12 +20,14 @@ export default function ReglasScreen() {
   useFocusEffect(recargar);
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
-      <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
-        <Ionicons name="chevron-back" size={22} color={tema.primario} />
-        <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
-      </TouchableOpacity>
-      <Text style={[styles.titulo, { color: tema.texto }]}>Categorías aprendidas</Text>
+    <View style={[styles.container, { backgroundColor: tema.fondo }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
+      {embebido ? null : (
+        <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
+          <Ionicons name="chevron-back" size={22} color={tema.primario} />
+          <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
+        </TouchableOpacity>
+      )}
+      {embebido ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Categorías aprendidas</Text>}
       <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 10 }}>
         Balanz recuerda la categoría que eliges para cada comercio y la aplica solo la próxima vez.
       </Text>
@@ -84,3 +86,7 @@ const styles = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   icono: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
+
+export default function ReglasScreen() {
+  return <Redirect href="/categorias?vista=aprendidas" />;
+}

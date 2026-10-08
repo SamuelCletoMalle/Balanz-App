@@ -8,7 +8,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoiding
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
 import { Alert } from '../dialogos';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
@@ -18,7 +18,7 @@ import { Escalonado, Interruptor } from '../components/ui';
 
 const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
 
-export default function RecurrentesScreen() {
+export function RecurrentesContenido({ embebido = false }: { embebido?: boolean }) {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const router = useRouter();
@@ -109,20 +109,27 @@ export default function RecurrentesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
-      <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
-        <Ionicons name="chevron-back" size={22} color={tema.primario} />
-        <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: tema.fondo }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
+      {embebido ? null : (
+        <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
+          <Ionicons name="chevron-back" size={22} color={tema.primario} />
+          <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.cabecera}>
-        <Text style={[styles.titulo, { color: tema.texto }]}>Recurrentes</Text>
+        {embebido ? (
+          <Text style={{ flex: 1, color: tema.textoSuave, fontSize: 14, paddingRight: 12 }}>Pagos que se apuntan solos: alquiler, suscripciones, seguros…</Text>
+        ) : null}
+        {embebido ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Recurrentes</Text>}
         <TouchableOpacity accessibilityRole="button" style={[styles.nuevo, { backgroundColor: tema.primario }]} accessibilityLabel="Nuevo recurrente" onPress={() => abrir(VACIO)}>
           <Ionicons name="add" size={22} color={tema.primarioTexto} />
         </TouchableOpacity>
       </View>
-      <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 6 }}>
-        Alquiler, suscripciones, seguros o nómina: se registran solos con la frecuencia que elijas (cada mes, cada 6 meses, cada año…).
-      </Text>
+      {embebido ? null : (
+        <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 6 }}>
+          Alquiler, suscripciones, seguros o nómina: se registran solos con la frecuencia que elijas (cada mes, cada 6 meses, cada año…).
+        </Text>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
 <Escalonado>
@@ -323,3 +330,7 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 22, marginRight: 8 },
   boton: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
 });
+
+export default function RecurrentesScreen() {
+  return <Redirect href="/planes?vista=fijos" />;
+}

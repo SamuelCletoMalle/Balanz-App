@@ -12,7 +12,7 @@ import { saldoPorMes, proyectarSaldo, comparativaMismoMes } from '../evolucion';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { usePreferencias } from '../accesibilidad';
 import { Text, TextInput } from '../components/Texto';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getTotalMesActual,
@@ -34,7 +34,8 @@ import {
 import { proximosCobros, ProximoCobro } from '../recurrentes';
 import { comprobarPresupuestos } from '../avisos';
 import { getCategorias, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
-import { Escalonado, Barra, Segmentos, useQuieto } from '../components/ui';
+import { Escalonado, Segmentos, useQuieto } from '../components/ui';
+import GastoPorCategoria from '../components/GastoPorCategoria';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Vista = 'mes' | 'cuentas' | 'evolucion';
@@ -61,7 +62,11 @@ export default function ResumenScreen() {
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
   const router = useRouter();
-  const [vista, setVista] = useState<Vista>('mes');
+  const { vista: pedida } = useLocalSearchParams<{ vista?: string }>();
+  const [elegida, setElegida] = useState<{ para?: string; v: Vista } | null>(null);
+  const deLaRuta: Vista = pedida === 'cuentas' || pedida === 'evolucion' ? pedida : 'mes';
+  const vista: Vista = elegida && elegida.para === pedida ? elegida.v : deLaRuta;
+  const setVista = (v: Vista) => setElegida({ para: pedida, v });
   const [gastado, setGastado] = useState(0);
   const [ingresos, setIngresos] = useState(0);
   const [limite, setLimiteState] = useState(0);
@@ -220,132 +225,12 @@ export default function ResumenScreen() {
         </Text>
       ) : null}
 
-      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
-        <View style={styles.fila}>
-          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRESUPUESTO DEL MES</Text>
-          {limite > 0 && !editando ? (
-            <TouchableOpacity accessibilityRole="button"
-              onPress={() => {
-                setNuevoLimite(String(limite).replace('.', ','));
-                setEditando(true);
-              }}
-            >
-              <Ionicons name="create-outline" size={20} color={tema.primario} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {editando || limite === 0 ? (
-          <View style={{ gap: 10 }}>
-            {limite === 0 && !editando ? (
-              <Text style={{ color: tema.textoSuave, fontSize: 14 }}>
-                Fija cuánto quieres gastar al mes y te avisaremos de cómo vas.
-              </Text>
-            ) : null}
-            {editando ? (
-              <TextInput
-                style={[styles.input, { backgroundColor: tema.tarjetaSuave, color: tema.texto }]}
-                placeholder="Límite mensual (€)"
-                placeholderTextColor={tema.textoSuave}
-                keyboardType="decimal-pad"
-                value={nuevoLimite}
-                onChangeText={setNuevoLimite}
-                autoFocus
-              />
-            ) : null}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {editando ? (
-                <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.tarjetaSuave }]} onPress={() => setEditando(false)}>
-                  <Text style={{ color: tema.texto, fontWeight: '700' }}>Cancelar</Text>
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity accessibilityRole="button"
-                style={[styles.boton, { backgroundColor: tema.primario, flex: 1 }]}
-                onPress={editando ? guardarLimite : () => setEditando(true)}
-              >
-                <Text style={{ color: tema.primarioTexto, fontWeight: '700' }}>{editando ? 'Guardar' : 'Fijar límite'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.grande, { color: tema.texto }]}>
-              {formatoEuro(gastado)}
-              <Text style={{ fontSize: 16, color: tema.textoSuave, fontWeight: '600' }}> / {formatoEuro(limite)}</Text>
-            </Text>
-            <View style={[styles.barraFondo, { backgroundColor: tema.tarjetaSuave }]}>
-              <Barra p={porcentaje} color={colorEstado} />
-            </View>
-            <Text style={{ color: colorEstado, fontWeight: '700', fontSize: 15 }}>
-              {restante >= 0 ? `Te quedan ${formatoEuro(restante)}` : `Te has pasado ${formatoEuro(Math.abs(restante))}`}
-            </Text>
-            <Text style={{ color: tema.textoSuave, fontSize: 12 }}>
-              A este ritmo terminarás el mes en {formatoEuro(proyeccion)}.
-            </Text>
-          </>
-        )}
-      </View>
-
-      <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
-        <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRESUPUESTO POR CATEGORÍA (toca para fijar)</Text>
-        {getCategorias().map((cat) => {
-          const gasto = gastoCat(cat.nombre);
-          const lim = presupuestos[cat.nombre];
-          if (!lim && gasto === 0) {
-            return (
-              <TouchableOpacity accessibilityRole="button"
-                key={cat.nombre}
-                style={styles.fila}
-                onPress={() => {
-                  setCatEditando(cat.nombre);
-                  setValorCat('');
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={[styles.icono, { backgroundColor: cat.color + '22' }]}>
-                    <Ionicons name={cat.icono} size={14} color={cat.color} />
-                  </View>
-                  <Text style={{ color: tema.textoSuave, fontSize: 14 }}>{cat.nombre}</Text>
-                </View>
-                <Text style={{ color: tema.primario, fontSize: 12, fontWeight: '700' }}>Fijar límite</Text>
-              </TouchableOpacity>
-            );
-          }
-          const pct = lim ? Math.min(gasto / lim, 1) : gastado > 0 ? gasto / gastado : 0;
-          const color = lim ? (gasto > lim ? tema.peligro : gasto / lim > 0.8 ? tema.aviso : cat.color) : cat.color;
-          return (
-            <TouchableOpacity accessibilityRole="button"
-              key={cat.nombre}
-              style={{ gap: 6 }}
-              onPress={() => {
-                setCatEditando(cat.nombre);
-                setValorCat(lim ? String(lim).replace('.', ',') : '');
-              }}
-            >
-              <View style={styles.fila}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={[styles.icono, { backgroundColor: cat.color + '22' }]}>
-                    <Ionicons name={cat.icono} size={14} color={cat.color} />
-                  </View>
-                  <Text style={{ color: tema.texto, fontWeight: '600', fontSize: 14 }}>{cat.nombre}</Text>
-                </View>
-                <Text style={{ color: gasto > (lim ?? Infinity) ? tema.peligro : tema.texto, fontWeight: '700', fontSize: 14 }}>
-                  {formatoEuro(gasto)}
-                  {lim ? <Text style={{ color: tema.textoSuave, fontWeight: '500' }}> / {formatoEuro(lim)}</Text> : null}
-                </Text>
-              </View>
-              <View style={[styles.barraFina, { backgroundColor: tema.tarjetaSuave }]}>
-                <Barra p={pct} color={color} radio={4} />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <GastoPorCategoria filas={porCategoria} />
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
         <View style={styles.fila}>
           <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRÓXIMOS 30 DÍAS</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/recurrentes')}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/planes?vista=fijos')}>
             <Text style={{ color: tema.primario, fontWeight: '700', fontSize: 12 }}>Gestionar</Text>
           </TouchableOpacity>
         </View>
@@ -500,41 +385,23 @@ export default function ResumenScreen() {
 
       </Grupo>
 
-      <Modal visible={!!catEditando} transparent animationType={reducirMovimiento ? 'none' : 'fade'} onRequestClose={() => setCatEditando(null)}>
-        <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.modalCaja, { backgroundColor: tema.tarjeta }]}>
-            <Text style={{ color: tema.texto, fontSize: 18, fontWeight: '800' }}>Límite de {catEditando}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: tema.tarjetaSuave, color: tema.texto }]}
-              placeholder="Importe mensual (€)"
-              placeholderTextColor={tema.textoSuave}
-              keyboardType="decimal-pad"
-              value={valorCat}
-              onChangeText={setValorCat}
-              autoFocus
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {catEditando && presupuestos[catEditando] ? (
-                <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.tarjetaSuave }]} onPress={() => guardarCategoria(true)}>
-                  <Ionicons name="trash-outline" size={18} color={tema.peligro} />
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.tarjetaSuave, flex: 1 }]} onPress={() => setCatEditando(null)}>
-                <Text style={{ color: tema.texto, fontWeight: '700' }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.primario, flex: 1 }]} onPress={() => guardarCategoria()}>
-                <Text style={{ color: tema.primarioTexto, fontWeight: '700' }}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/informe')} style={[styles.enlaceInforme, { backgroundColor: tema.tarjeta, borderColor: tema.borde }]}>
+        <Ionicons name="document-text-outline" size={22} color={tema.oscuro ? tema.acento : tema.texto} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: tema.texto, fontSize: 15, fontWeight: '700' }}>Informe mensual</Text>
+          <Text style={{ color: tema.textoSuave, fontSize: 12 }}>Comparativa con el mes pasado y PDF para compartir</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={tema.textoSuave} />
+      </TouchableOpacity>
+
+
     </Escalonado>
 </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  enlaceInforme: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: 16 },
   container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   titulo: { fontSize: 32, fontWeight: '800' },
   dosColumnas: { flexDirection: 'row', gap: 12 },

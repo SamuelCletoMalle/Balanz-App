@@ -62,8 +62,12 @@ export default function PendientesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
+      <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -6, marginBottom: 4 }}>
+        <Ionicons name="chevron-back" size={22} color={tema.primario} />
+        <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>
+      </TouchableOpacity>
       <View style={styles.cabecera}>
-        <Text style={[styles.titulo, { color: tema.texto }]}>Pendientes</Text>
+        <Text style={[styles.titulo, { color: tema.texto }]}>Pagos por revisar</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/atajos')} style={[styles.ayuda, { backgroundColor: tema.tarjeta }]}>
           <Ionicons name="flash-outline" size={18} color={tema.primario} />
           <Text style={{ color: tema.primario, fontWeight: '700', fontSize: 13 }}>Configurar</Text>
