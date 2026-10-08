@@ -35,6 +35,7 @@
       html,
       body {
         height: 100%;
+        min-height: 100lvh;
         margin: 0;
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
@@ -52,6 +53,10 @@
         right: 0;
         bottom: 0;
         left: 0;
+        width: 100%;
+        /* lvh = la pantalla entera sin descontar barras del navegador: nunca más corto que el móvil. */
+        min-height: 100vh;
+        min-height: 100lvh;
         flex: 1;
         box-sizing: border-box;
         /* Con la barra del móvil translúcida (modo oscuro), el contenido empieza justo debajo de ella. */
@@ -68,23 +73,6 @@
   <body>
     <noscript>Necesitas activar JavaScript para usar Balanz.</noscript>
     <div id="root"></div>
-    <script>
-      // iPhone con la app instalada: a veces iOS da a la página unos puntos menos que la pantalla y queda una franja negra
-      // abajo. Aquí se le da a la app el alto real de la pantalla.
-      (function () {
-        var instalada = window.navigator.standalone === true; // solo existe en el iPhone/iPad
-        if (!instalada) return;
-        var raiz = document.getElementById('root');
-        function ajustar() {
-          var alto = Math.max(window.innerHeight, window.screen.height || 0);
-          raiz.style.bottom = 'auto';
-          raiz.style.height = alto + 'px';
-        }
-        ajustar();
-        window.addEventListener('resize', ajustar);
-        window.addEventListener('orientationchange', function () { setTimeout(ajustar, 200); });
-      })();
-    </script>
     <script>
       // Para poder abrir la app sin conexión (solo en HTTPS).
       if ('serviceWorker' in navigator && location.protocol === 'https:') {

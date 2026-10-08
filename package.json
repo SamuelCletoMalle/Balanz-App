@@ -1,7 +1,7 @@
 {
   "name": "balanz-app",
   "main": "expo-router/entry",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/manrope": "^0.4.2",
