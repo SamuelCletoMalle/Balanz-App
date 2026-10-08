@@ -29,7 +29,7 @@ Nació para uso familiar (cada persona tiene su cuenta y nadie ve los datos de o
 principio a fin: diseño, base de datos local, sincronización en la nube, seguridad por usuario y despliegue en
 producción. Una sola base de código en TypeScript funciona en móvil y en web.
 
-**Versión 1.0.** Probada en emulador Android y en la web (móvil y escritorio). Las partes que dependen del hardware
+**Versión 3.0.** Rediseño completo: identidad nueva (negro y lima), logo nuevo, animaciones y la app reorganizada en 5 pestañas (Inicio, Movimientos, Planes, Resumen y Más). Las versiones anteriores están en las etiquetas `v1.0` y `v2.0`. Probada en emulador Android y en la web (móvil y escritorio). Las partes que dependen del hardware
 (Face ID, vibraciones, cámara) están programadas pero no las he podido verificar en un iPhone real.
 
 ## ✨ Funciones

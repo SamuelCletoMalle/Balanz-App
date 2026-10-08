@@ -19,6 +19,8 @@ declare
   tip text := 'gasto';
   cat text := 'Otros';
 begin
+  -- Wallet puede mandar el importe con el símbolo delante ("€12.50"): lo pasamos a "12.50 €".
+  t := regexp_replace(t, '€\s*(\d+(?:[.,]\d+)*)', '\1 €', 'g');
   -- Prefiere el número que lleva € / EUR; si no hay, el primer número suelto.
   m := regexp_match(t, '(\d+(?:[.,]\d+)*)\s*(?:€|eur\y|euros?\y)', 'i');
   if m is null then

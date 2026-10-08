@@ -263,13 +263,29 @@ export default function AtajosScreen() {
               <Text style={[styles.seccion, { color: tema.textoSuave }]}>B · QUE ENVÍE EL PAGO A BALANZ</Text>
               {pasosEnvio}
               <Paso tema={tema} n={6}>
-                En el valor de <Text style={styles.b}>p_texto</Text>: escribe <Text style={styles.b}>Comercio: </Text>, toca el campo y elige la variable <Text style={styles.b}>Comercio</Text>; después escribe <Text style={styles.b}> Importe: </Text> y elige la variable <Text style={styles.b}>Importe</Text>. Quedará algo así: <Text style={styles.b}>Comercio: [Comercio] Importe: [Importe]</Text>.
+                Toca el valor de <Text style={styles.b}>p_texto</Text> y escribe <Text style={styles.b}>Comercio: </Text>. En la barra sobre el teclado toca <Text style={styles.b}>Entrada del atajo</Text> (se añade como una etiqueta azul) y <Text style={styles.b}>tócala otra vez</Text>: en el menú elige <Text style={styles.b}>Comerciante</Text> (o Comercio).
               </Paso>
               <Paso tema={tema} n={7}>
-                Pulsa <Text style={styles.b}>Hecho</Text>. La próxima vez que pagues con el móvil, el gasto llegará solo.
+                Sigue en el mismo campo: escribe <Text style={styles.b}> Importe: </Text>, vuelve a tocar <Text style={styles.b}>Entrada del atajo</Text>, tócala otra vez y elige <Text style={styles.b}>Importe</Text>. Quedará: <Text style={styles.b}>Comercio: [Comerciante] Importe: [Importe]</Text>. Si solo ves “Entrada del atajo” sin elegir nada, enviará todo el pago en bruto y no funcionará bien.
+              </Paso>
+              <Paso tema={tema} n={8}>
+                Pulsa <Text style={styles.b}>Hecho</Text>. No uses el botón ▶ de prueba: sin un pago real no hay comercio ni importe y da error. Para probarlo, paga algo de verdad con el móvil.
               </Paso>
               <Consejo tema={tema}>
-                <Text style={styles.b}>Para que te avise:</Text> al final añade la acción <Text style={styles.b}>Mostrar notificación</Text> y, como texto, elige <Text style={styles.b}>Contenido de URL</Text>. Con la opción “Que se apunte solo” verás, por ejemplo, “Gasto 12.50 € · Mercadona”.
+                Apple a veces tarda en avisar de la transacción y, en algunos bancos, el atajo no llega a ejecutarse (es un fallo conocido de iOS, no de Balanz). Si un pago no aparece, revisa Pendientes: los que llegan se guardan allí o en movimientos.
+              </Consejo>
+              <Text style={[styles.seccion, { color: tema.textoSuave }]}>C · QUE TE AVISE (OPCIONAL)</Text>
+              <Paso tema={tema} n={1}>
+                Debajo de la acción de enviar, pulsa <Text style={styles.b}>Añadir acción</Text> y busca <Text style={styles.b}>Mostrar notificación</Text>.
+              </Paso>
+              <Paso tema={tema} n={2}>
+                Toca el texto azul de la acción: es el cuerpo del aviso y puedes escribir lo que quieras, como <Text style={styles.b}>Pago apuntado en Balanz:</Text>. Después, sin borrar nada, toca el campo y elige la variable <Text style={styles.b}>Contenido de URL</Text> (es la respuesta de Balanz). Verás algo como “Pago apuntado en Balanz: Gasto 12.50 € · Mercadona”.
+              </Paso>
+              <Paso tema={tema} n={3}>
+                Para cambiar el título, pulsa la flecha pequeña <Text style={styles.b}>›</Text> de la acción y escribe el que quieras, por ejemplo <Text style={styles.b}>Balanz</Text>.
+              </Paso>
+              <Consejo tema={tema}>
+                La variable <Text style={styles.b}>Contenido de URL</Text> solo trae el gasto con “Que se apunte solo”. Con “Lo confirmo yo” Balanz no devuelve nada, así que escribe tú el texto, por ejemplo “Pago enviado a Balanz, confírmalo en Pendientes”, y no añadas la variable.
               </Consejo>
             </View>
           ) : null}
