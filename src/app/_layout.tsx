@@ -12,11 +12,15 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import { Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../supabase';
 import LoginScreen from '../components/LoginScreen';
+import RecuperarContrasena from '../components/RecuperarContrasena';
+import Aviso from '../components/Aviso';
+import { leerEnlace, traducirError } from '../autenticacion';
 import Bloqueo from '../components/Bloqueo';
 import Intro from '../components/Intro';
 import BarraInferior from '../components/BarraInferior';
@@ -26,7 +30,8 @@ import AlertaLimite from '../components/AlertaLimite';
 import { DisolverTema } from '../components/ui';
 import Onboarding from '../components/Onboarding';
 import { contarGastos, contarPendientes, marcarOnboarding, onboardingHecho, onCambioPendientes, usarBaseDeUsuario } from '../db';
-import { descargarGastosDeLaNube, sincronizarCaptaciones, sincronizarPerfil } from '../sync';
+import { sincronizarCaptaciones, sincronizarPerfil, sincronizarTodo } from '../sync';
+import { notificarCambioDatos } from '../nuevo-estado';
 import { generarRecurrentes } from '../recurrentes';
 import { aplicarAportesAutomaticos } from '../metas';
 import { avisarPendientesNuevos, comprobarPresupuestos, pedirPermisoAvisos } from '../avisos';
@@ -68,6 +73,9 @@ export default function RootLayout() {
   const [perfilListo, setPerfilListo] = useState(false);
   const [, refrescarAlta] = useState(0);
   const [pendientes, setPendientes] = useState(0);
+  // Enlaces de los correos: elegir contraseña nueva (pantalla propia) y mensajes de confirmado / caducado.
+  const [recuperando, setRecuperando] = useState(false);
+  const [mensajeEnlace, setMensajeEnlace] = useState<string | null>(null);
   // Id de la cuenta ya desbloqueada: el bloqueo es por usuario y se vuelve a pedir tras un rato fuera.
   const [desbloqueado, setDesbloqueado] = useState<string | null>(null);
   const userActivo = useRef<string | null>(null);
@@ -78,10 +86,53 @@ export default function RootLayout() {
       setSession(data.session);
       setCargando(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, sesion) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((evento, sesion) => {
       setSession(sesion);
+      if (evento === 'PASSWORD_RECOVERY') setRecuperando(true);
     });
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    const aplicar = async (url: string | null | undefined, nativo: boolean) => {
+      const e = leerEnlace(url);
+      if (!e || !activo) return;
+      if (e.error) {
+        setMensajeEnlace(traducirError(e.error));
+        return;
+      }
+      // En el móvil la sesión del enlace se pone a mano; en la web ya la ha puesto Supabase.
+      if (nativo && e.accessToken && e.refreshToken) {
+        const { error } = await supabase.auth.setSession({ access_token: e.accessToken, refresh_token: e.refreshToken });
+        if (error) {
+          setMensajeEnlace(traducirError(error.message));
+          return;
+        }
+      }
+      if (e.tipo === 'recovery') setRecuperando(true);
+      else if (e.tipo === 'signup' || e.tipo === 'email') setMensajeEnlace('Correo confirmado. ¡Ya puedes usar Balanz!');
+      else if (e.tipo === 'email_change') setMensajeEnlace('Correo actualizado. Desde ahora entras con el nuevo.');
+      else if (e.mensaje && e.mensaje.toLowerCase().includes('other email')) setMensajeEnlace('Enlace aceptado. Falta abrir el que te hemos enviado a la otra dirección de correo.');
+    };
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        aplicar(window.location.href, false);
+        // Se limpia la dirección cuando Supabase ya la ha leído, para que no se vuelva a procesar al recargar.
+        supabase.auth.getSession().finally(() => {
+          if (window.location.hash || /[?&](type|error)=/.test(window.location.search)) window.history.replaceState(null, '', window.location.pathname);
+        });
+      }
+      return () => {
+        activo = false;
+      };
+    }
+    Linking.getInitialURL().then((url) => aplicar(url, true)).catch(() => {});
+    const sub = Linking.addEventListener('url', (ev) => aplicar(ev.url, true));
+    return () => {
+      activo = false;
+      sub.remove();
+    };
   }, []);
 
   // Cada cuenta usa su propia base local: varias personas pueden compartir dispositivo sin pisarse.
@@ -122,9 +173,11 @@ export default function RootLayout() {
     const refrescar = async () => {
       const nuevos = await sincronizarCaptaciones().catch(() => 0);
       avisarPendientesNuevos(nuevos);
+      // Lo que se haya hecho en otro dispositivo (movimientos, metas, ajustes…) aparece sin tener que cambiar de pantalla.
+      if (await sincronizarTodo().catch(() => false)) notificarCambioDatos();
     };
     const completo = async () => {
-      await descargarGastosDeLaNube().catch(() => {});
+      if (await sincronizarTodo().catch(() => false)) notificarCambioDatos();
       await generarRecurrentes().catch(() => 0);
       try {
         aplicarAportesAutomaticos();
@@ -137,6 +190,23 @@ export default function RootLayout() {
     pedirPermisoAvisos();
     completo();
     const intervalo = setInterval(refrescar, 30000);
+    // En tiempo real: cuando otro dispositivo cambia algo, la nube avisa y se sincroniza al momento. Si el tiempo real
+    // no está activado en Supabase (supabase/tiempo-real.sql), el repaso de cada 30 s lo cubre igual.
+    let pendienteRT: ReturnType<typeof setTimeout> | null = null;
+    const alCambiarNube = () => {
+      if (pendienteRT) clearTimeout(pendienteRT);
+      pendienteRT = setTimeout(() => {
+        sincronizarTodo()
+          .then((cambio) => cambio && notificarCambioDatos())
+          .catch(() => {});
+      }, 500);
+    };
+    const usuario = session.user.id;
+    const canal = supabase
+      .channel(`balanz-${usuario}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gastos', filter: `user_id=eq.${usuario}` }, alCambiarNube)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'perfiles', filter: `user_id=eq.${usuario}` }, alCambiarNube)
+      .subscribe();
     const sub = AppState.addEventListener('change', (estado) => {
       if (estado === 'active') {
         if (bloqueoActivado() && salidaEn.current && Date.now() - salidaEn.current > 20000) setDesbloqueado(null);
@@ -148,6 +218,8 @@ export default function RootLayout() {
     });
     return () => {
       clearInterval(intervalo);
+      if (pendienteRT) clearTimeout(pendienteRT);
+      supabase.removeChannel(canal);
       sub.remove();
     };
   }, [session]);
@@ -163,6 +235,15 @@ export default function RootLayout() {
     contenido = cargandoVista;
   } else if (!session) {
     contenido = <LoginScreen />;
+  } else if (recuperando) {
+    contenido = (
+      <RecuperarContrasena
+        onTerminar={(mensaje) => {
+          setRecuperando(false);
+          if (mensaje) setMensajeEnlace(mensaje);
+        }}
+      />
+    );
   } else if (!perfilListo) {
     contenido = cargandoVista;
   } else if (!onboardingHecho()) {
@@ -218,6 +299,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       {contenido}
       <DisolverTema fondo={tema.fondo} />
+      {mensajeEnlace && !intro ? <Aviso tema={tema} texto={mensajeEnlace} ms={9000} onCerrar={() => setMensajeEnlace(null)} /> : null}
       {intro && fuentesOk ? <Intro onFin={() => setIntro(false)} /> : null}
     </GestureHandlerRootView>
   );

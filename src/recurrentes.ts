@@ -12,6 +12,8 @@ import {
   fechaHoy,
   claveRegla,
   tocaEnMes,
+  sumarMeses,
+  getMetas,
   Gasto,
   Recurrente,
 } from './db';
@@ -32,6 +34,26 @@ function siguienteMes(mes: string): string {
   const [a, m] = mes.split('-').map(Number);
   const d = new Date(a, m, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * UUID que sale siempre igual para la misma semilla. Si dos dispositivos generan el mismo cobro del mes, los dos
+ * crean el mismo movimiento y al sincronizar queda uno solo (en vez de dos).
+ */
+function idDeterminista(semilla: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x1b873593;
+  let h3 = 0xdeadbeef;
+  let h4 = 0x9e3779b9;
+  for (let i = 0; i < semilla.length; i++) {
+    const c = semilla.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 16777619);
+    h2 = Math.imul(h2 ^ c, 2246822519);
+    h3 = Math.imul(h3 + c, 3266489917);
+    h4 = Math.imul(h4 ^ c, 668265263);
+  }
+  const hex = [h1, h2, h3, h4].map((h) => (h >>> 0).toString(16).padStart(8, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(12, 15)}-a${hex.slice(15, 18)}-${hex.slice(18, 30)}`;
 }
 
 /** Crea los gastos/ingresos recurrentes que tocan hasta hoy (mensuales, cada 6 meses, anuales…; máximo 12 meses atrás o un ciclo). */
@@ -58,14 +80,18 @@ export async function generarRecurrentes(): Promise<number> {
       const fecha = fechaDe(mes, r.dia);
       if (fecha > hoy) break;
       const gasto = {
-        id: Crypto.randomUUID(),
+        id: idDeterminista(`${r.id}|${mes}`),
         descripcion: r.descripcion,
         categoria: r.categoria,
         importe: r.importe,
         fecha,
         tipo: r.tipo,
       };
-      insertGasto(gasto);
+      try {
+        insertGasto(gasto);
+      } catch {
+        // ya lo había creado otro dispositivo y ha llegado con la sincronización
+      }
       marcarRecurrenteGenerada(r.id, mes);
       subirGastoANube(gasto).catch(() => {});
       creados++;
@@ -158,4 +184,44 @@ export function detectarSuscripciones(): Sospechosa[] {
 export function textoVariacion(s: Sospechosa): string | null {
   if (s.variacion === null || s.anterior === null || Math.abs(s.variacion) < 2) return null;
   return `${s.variacion > 0 ? 'Ha subido' : 'Ha bajado'} de ${formatoEuro(s.anterior)} a ${formatoEuro(s.importe)}`;
+}
+
+export type ItemPlan = { id: string; descripcion: string; importe: number; tipo: 'gasto' | 'ingreso' | 'ahorro'; dia: number; categoria: string };
+export type MesPlan = { mes: string; items: ItemPlan[]; gastos: number; ingresos: number; ahorro: number; neto: number };
+
+/**
+ * Lo que está previsto mes a mes: pagos e ingresos fijos (con sus plazos) y lo que se aparta solo para las metas.
+ * El mes actual solo cuenta lo que aún no se ha apuntado.
+ */
+export function planPorMeses(n = 12): MesPlan[] {
+  const actual = mesActual();
+  const recurrentes = getRecurrentes().filter((r) => r.activo);
+  // Lo que le falta a cada meta con aportación automática: el plan se para cuando la completa.
+  const metas = getMetas()
+    .filter((m) => m.aporte > 0 && m.objetivo - m.ahorrado > 0)
+    .map((m) => ({ meta: m, restante: m.objetivo - m.ahorrado }));
+
+  const plan: MesPlan[] = [];
+  for (let i = 0; i < n; i++) {
+    const mes = sumarMeses(actual, i);
+    const items: ItemPlan[] = [];
+    for (const r of recurrentes) {
+      if (!tocaEnMes(r, mes)) continue;
+      if (i === 0 && r.ultima >= mes) continue;
+      items.push({ id: r.id, descripcion: r.descripcion, importe: r.importe, tipo: r.tipo === 'ingreso' ? 'ingreso' : 'gasto', dia: r.dia, categoria: r.categoria });
+    }
+    for (const m of metas) {
+      if (m.restante <= 0) continue;
+      if (i === 0 && m.meta.ultimaAporte >= mes) continue;
+      const aporte = Math.min(m.meta.aporte, m.restante);
+      m.restante -= aporte;
+      items.push({ id: m.meta.id, descripcion: m.meta.nombre, importe: aporte, tipo: 'ahorro', dia: 0, categoria: '' });
+    }
+    items.sort((a, b) => a.dia - b.dia || a.descripcion.localeCompare(b.descripcion));
+    const suma = (t: ItemPlan['tipo']) => Math.round(items.filter((x) => x.tipo === t).reduce((s, x) => s + x.importe, 0) * 100) / 100;
+    const gastos = suma('gasto');
+    const ingresos = suma('ingreso');
+    plan.push({ mes, items, gastos, ingresos, ahorro: suma('ahorro'), neto: Math.round((ingresos - gastos) * 100) / 100 });
+  }
+  return plan;
 }

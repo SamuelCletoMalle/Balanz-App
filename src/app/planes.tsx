@@ -11,15 +11,16 @@ import { Segmentos, useQuieto } from '../components/ui';
 import PresupuestoContenido from '../components/PresupuestoContenido';
 import { MetasContenido } from './metas';
 import { RecurrentesContenido } from './recurrentes';
+import PlanMeses from '../components/PlanMeses';
 import { arriba } from '../layout';
 import { useTema } from '../tema';
 
-type Vista = 'presupuesto' | 'metas' | 'fijos';
-const VISTAS: Vista[] = ['presupuesto', 'metas', 'fijos'];
+type Vista = 'presupuesto' | 'metas' | 'fijos' | 'meses';
+const VISTAS: Vista[] = ['presupuesto', 'metas', 'fijos', 'meses'];
 
 /**
  * Planes: todo lo que mira al futuro en un solo sitio — cuánto quieres gastar (presupuesto), cuánto quieres ahorrar
- * (metas) y los pagos que se repiten solos (fijos). Se puede abrir en una vista con `/planes?vista=metas`.
+ * (metas), los pagos que se repiten solos (fijos) y el plan mes a mes (meses). Se puede abrir en una vista con `/planes?vista=metas`.
  */
 export default function PlanesScreen() {
   const tema = useTema();
@@ -34,15 +35,24 @@ export default function PlanesScreen() {
       <Text style={[styles.titulo, { color: tema.texto }]}>Planes</Text>
       <Segmentos<Vista>
         opciones={[
-          { id: 'presupuesto', texto: 'Presupuesto' },
+          { id: 'presupuesto', texto: 'Límites' },
           { id: 'metas', texto: 'Metas' },
           { id: 'fijos', texto: 'Fijos' },
+          { id: 'meses', texto: 'Meses' },
         ]}
         valor={vista}
         onChange={(v) => setElegida({ para: pedida, v })}
       />
       <Animated.View key={vista} entering={quieto ? undefined : FadeIn.duration(220)} style={styles.contenido}>
-        {vista === 'presupuesto' ? <PresupuestoContenido /> : vista === 'metas' ? <MetasContenido embebido /> : <RecurrentesContenido embebido />}
+        {vista === 'presupuesto' ? (
+          <PresupuestoContenido />
+        ) : vista === 'metas' ? (
+          <MetasContenido embebido />
+        ) : vista === 'meses' ? (
+          <PlanMeses />
+        ) : (
+          <RecurrentesContenido embebido />
+        )}
       </Animated.View>
     </View>
   );

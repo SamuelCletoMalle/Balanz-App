@@ -3,6 +3,7 @@
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -20,6 +21,8 @@ export const supabase = createClient(supabaseUrl || 'http://localhost', supabase
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // En la web, al abrir el enlace de un correo (confirmar, recuperar contraseña…) la sesión llega en la dirección.
+    // En el móvil el enlace se procesa a mano (ver _layout).
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });

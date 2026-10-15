@@ -56,8 +56,9 @@ function Grupo({ amplio, clave, activo, children }: { amplio: boolean; clave: st
 }
 
 export default function ResumenScreen() {
-  const { amplio } = useDisposicion();
-  // En pantallas anchas las tarjetas se reparten en dos columnas; el título, el saldo y el resumen ocupan todo el ancho.
+  const { escritorio } = useDisposicion();
+  // En ordenador no se reparte todo en una rejilla: se ve un apartado cada vez, centrado y con aire.
+  const amplio = false;
   const abarcar = amplio ? ({ gridColumn: '1 / -1' } as object) : null;
   const tema = useTema();
   const { reducirMovimiento } = usePreferencias();
@@ -168,7 +169,7 @@ export default function ResumenScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: tema.fondo }}
-      contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container}
+      contentContainerStyle={[styles.container, escritorio ? styles.centrado : null]}
       showsVerticalScrollIndicator={false}
     >
 <Escalonado>
@@ -403,6 +404,7 @@ export default function ResumenScreen() {
 const styles = StyleSheet.create({
   enlaceInforme: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: 16 },
   container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
+  centrado: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingTop: 36, gap: 18 },
   titulo: { fontSize: 32, fontWeight: '800' },
   dosColumnas: { flexDirection: 'row', gap: 12 },
   rejilla: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignItems: 'start' } as object,

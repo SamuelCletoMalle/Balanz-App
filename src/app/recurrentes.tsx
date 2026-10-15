@@ -11,12 +11,12 @@ import { Alert } from '../dialogos';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
-import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, NOMBRES_MES, Recurrente, Tipo } from '../db';
+import { getRecurrentes, insertRecurrente, updateRecurrente, deleteRecurrente, mesActual, textoFrecuencia, FRECUENCIAS, Recurrente, Tipo, sumarMeses, nombreMesCorto, numeroDePagos } from '../db';
 import { generarRecurrentes, detectarSuscripciones, textoVariacion, Sospechosa } from '../recurrentes';
 import { getCategorias, infoCategoria, formatoEuro, useTema } from '../tema';
 import { Escalonado, Interruptor } from '../components/ui';
 
-const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '' };
+const VACIO: Recurrente = { id: '', descripcion: '', categoria: getCategorias()[0].nombre, importe: 0, tipo: 'gasto', dia: 1, ultima: '', activo: 1, cada: 1, inicio: '', hasta: '' };
 
 export function RecurrentesContenido({ embebido = false }: { embebido?: boolean }) {
   const tema = useTema();
@@ -31,7 +31,8 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
   const [categoria, setCategoria] = useState(getCategorias()[0].nombre);
   const [tipo, setTipo] = useState<Tipo>('gasto');
   const [cada, setCada] = useState(1);
-  const [mesPrimero, setMesPrimero] = useState(new Date().getMonth() + 1); // 1-12: mes del primer pago si no es mensual
+  const [desde, setDesde] = useState(mesActual()); // 'YYYY-MM' del primer pago
+  const [pagos, setPagos] = useState(0); // 0 = sin fin
 
   const recargar = useCallback(() => {
     setLista(getRecurrentes());
@@ -48,7 +49,8 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
     setCategoria(r.categoria);
     setTipo(r.tipo);
     setCada(r.cada >= 1 ? r.cada : 1);
-    setMesPrimero(r.inicio ? Number(r.inicio.slice(5, 7)) : new Date().getMonth() + 1);
+    setDesde(r.inicio || mesActual());
+    setPagos(numeroDePagos(r));
   };
 
   const guardar = async () => {
@@ -59,9 +61,10 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
       Alert.alert('Revisa los datos', 'Pon una descripción, un importe mayor que 0 y un día entre 1 y 31.');
       return;
     }
-    // Si no es mensual, el primer pago cae en el mes elegido de este año y de ahí se cuenta cada N meses.
-    const inicio = cada > 1 ? `${new Date().getFullYear()}-${String(mesPrimero).padStart(2, '0')}` : '';
-    const nuevo: Recurrente = { ...editando, descripcion: descripcion.trim(), importe: imp, dia: d, categoria, tipo, cada, inicio };
+    // El primer pago cae en el mes elegido y de ahí se cuenta cada N meses; con "pagos" se acaba solo (pagos a plazos).
+    const inicio = desde;
+    const hasta = pagos > 0 ? sumarMeses(inicio, (pagos - 1) * cada) : '';
+    const nuevo: Recurrente = { ...editando, descripcion: descripcion.trim(), importe: imp, dia: d, categoria, tipo, cada, inicio, hasta };
     if (editando.id) updateRecurrente(nuevo);
     else insertRecurrente({ ...nuevo, id: Crypto.randomUUID() });
     setEditando(null);
@@ -104,6 +107,7 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
       activo: 1,
       cada: 1,
       inicio: '',
+      hasta: '',
     });
     recargar();
   };
@@ -252,29 +256,46 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
                 );
               })}
             </ScrollView>
-            {cada > 1 ? (
-              <>
-                <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>¿EN QUÉ MES ES EL PRIMER PAGO?</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {NOMBRES_MES.map((nombre, i) => {
-                    const activa = mesPrimero === i + 1;
-                    return (
-                      <TouchableOpacity accessibilityRole="button"
-                        accessibilityState={{ selected: activa }}
-                        key={nombre}
-                        onPress={() => setMesPrimero(i + 1)}
-                        style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
-                      >
-                        <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 13, fontWeight: '600' }}>{nombre.charAt(0).toUpperCase() + nombre.slice(1)}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-                <Text style={{ color: tema.textoSuave, fontSize: 12, marginTop: -6 }}>
-                  Se apuntará el día {dia || '…'} de ese mes y se repetirá {cada === 12 ? 'cada año' : `cada ${cada} meses`}.
-                </Text>
-              </>
-            ) : null}
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>¿DESDE QUÉ MES?</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {(() => {
+                const meses = Array.from({ length: 12 }, (_, k) => sumarMeses(mesActual(), k));
+                if (!meses.includes(desde)) meses.unshift(desde);
+                return meses;
+              })().map((m) => {
+                const activa = desde === m;
+                return (
+                  <TouchableOpacity accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    key={m}
+                    onPress={() => setDesde(m)}
+                    style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                  >
+                    <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 13, fontWeight: '600' }}>{nombreMesCorto(m)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>¿CUÁNTOS PAGOS?</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {[0, 2, 3, 4, 6, 9, 12, 18, 24, 36].map((n) => {
+                const activa = pagos === n;
+                return (
+                  <TouchableOpacity accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    key={n}
+                    onPress={() => setPagos(n)}
+                    style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                  >
+                    <Text style={{ color: activa ? tema.primarioTexto : tema.texto, fontSize: 13, fontWeight: '600' }}>{n === 0 ? 'Sin fin' : `${n} pagos`}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <Text style={{ color: tema.textoSuave, fontSize: 12, marginTop: -6 }}>
+              {`Se apuntará el día ${dia || '…'} de ${nombreMesCorto(desde)}${cada === 1 ? ' y de cada mes' : cada === 12 ? ' y de cada año' : ` y cada ${cada} meses`}`}
+              {pagos > 0 ? `, ${pagos} veces en total (hasta ${nombreMesCorto(sumarMeses(desde, (pagos - 1) * cada))}). Después se para solo.` : ', sin fecha de fin.'}
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {getCategorias().map((c) => {
                 const activa = categoria === c.nombre;

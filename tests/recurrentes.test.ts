@@ -4,9 +4,9 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tocaEnMes, textoFrecuencia, normalizarRecurrente, mesesEntre, type Recurrente } from '../src/db-comun';
+import { tocaEnMes, textoFrecuencia, normalizarRecurrente, mesesEntre, sumarMeses, numeroDePagos, type Recurrente } from '../src/db-comun';
 
-const base: Recurrente = { id: '1', descripcion: 'x', categoria: 'Otros', importe: 10, tipo: 'gasto', dia: 15, ultima: '', activo: 1, cada: 1, inicio: '' };
+const base: Recurrente = { id: '1', descripcion: 'x', categoria: 'Otros', importe: 10, tipo: 'gasto', dia: 15, ultima: '', activo: 1, cada: 1, inicio: '', hasta: '' };
 
 test('mensual toca todos los meses', () => {
   assert.equal(tocaEnMes(base, '2026-01'), true);
@@ -41,4 +41,26 @@ test('textos de frecuencia', () => {
 test('meses entre fechas', () => {
   assert.equal(mesesEntre('2026-03', '2027-03'), 12);
   assert.equal(mesesEntre('2026-03', '2026-01'), -2);
+});
+
+test('un pago a plazos empieza en su mes y acaba solo', () => {
+  const r = { ...base, inicio: '2026-11', hasta: sumarMeses('2026-11', 11) };
+  assert.equal(r.hasta, '2027-10');
+  assert.equal(numeroDePagos(r), 12);
+  assert.equal(tocaEnMes(r, '2026-10'), false);
+  assert.equal(tocaEnMes(r, '2026-11'), true);
+  assert.equal(tocaEnMes(r, '2027-10'), true);
+  assert.equal(tocaEnMes(r, '2027-11'), false);
+  assert.equal(textoFrecuencia(r), 'Día 15 de cada mes · 12 pagos, hasta oct 2027');
+});
+
+test('plazos cada 3 meses', () => {
+  const r = { ...base, cada: 3, inicio: '2026-01', hasta: sumarMeses('2026-01', 3 * 3) };
+  assert.equal(numeroDePagos(r), 4);
+  assert.deepEqual(['2026-01', '2026-04', '2026-07', '2026-10', '2027-01'].map((m) => tocaEnMes(r, m)), [true, true, true, true, false]);
+});
+
+test('sumar meses cruza el año', () => {
+  assert.equal(sumarMeses('2026-11', 3), '2027-02');
+  assert.equal(sumarMeses('2026-01', -1), '2025-12');
 });

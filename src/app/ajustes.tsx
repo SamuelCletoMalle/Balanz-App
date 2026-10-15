@@ -18,7 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { contarGastos, borrarTodosLosDatos, getReglas, getMetas, getRecurrentes, getFondosIniciales, setFondosIniciales, sumaFondos, getSaldoTotal } from '../db';
 import { exportarGastosAExcel, importarGastosDesdeExcel } from '../excel';
 import { exportarCopia, elegirYRestaurarCopia } from '../copia';
+import Constants from 'expo-constants';
 import { supabase } from '../supabase';
+import { correoValido, traducirError, urlRedireccion } from '../autenticacion';
 import { borrarTodosLosGastosDeLaNube, subirPerfil } from '../sync';
 import { activarAvisos, avisosActivados, pedirPermisoAvisos } from '../avisos';
 import { activarSonidoCampana, activarVibracionCampana, sonarCampana, sonidoCampanaActivado, vibracionCampanaActivada } from '../campana';
@@ -126,7 +128,9 @@ function Grupo({ amplio, clave, activo, children }: { amplio: boolean; clave: st
 }
 
 export default function MasScreen() {
-  const { amplio } = useDisposicion();
+  const { escritorio } = useDisposicion();
+  // En ordenador no se reparte todo en columnas: se ve un apartado cada vez, centrado y con aire.
+  const amplio = false;
   const abarcar = amplio ? ({ columnSpan: 'all', marginBottom: 14 } as object) : null;
   // En columnas, cada bloque se queda entero en la suya.
   const bloque = amplio ? ({ breakInside: 'avoid', marginBottom: 14 } as object) : null;
@@ -163,6 +167,10 @@ export default function MasScreen() {
   // Saldo disponible: se escribe lo que hay de verdad y la diferencia se reparte en el dinero inicial (cuenta bancaria),
   // así los movimientos no se tocan y el saldo cuadra con la realidad.
   const [saldoAbierto, setSaldoAbierto] = useState(false);
+  const [correoAbierto, setCorreoAbierto] = useState(false);
+  const [correoNuevo, setCorreoNuevo] = useState('');
+  const [correoError, setCorreoError] = useState('');
+  const [correoEnviando, setCorreoEnviando] = useState(false);
   const [saldoActual, setSaldoActual] = useState(() => getSaldoTotal());
   const [saldoTexto, setSaldoTexto] = useState('');
 
@@ -330,6 +338,24 @@ export default function MasScreen() {
     }
   };
 
+  const cambiarCorreo = async () => {
+    const nuevo = correoNuevo.trim();
+    if (!correoValido(nuevo)) return setCorreoError('Ese correo no parece válido. Revisa que no falte nada.');
+    if (nuevo.toLowerCase() === (session?.user.email ?? '').toLowerCase()) return setCorreoError('Ese ya es tu correo actual.');
+    setCorreoEnviando(true);
+    setCorreoError('');
+    const { data, error } = await supabase.auth.updateUser({ email: nuevo }, { emailRedirectTo: urlRedireccion() });
+    setCorreoEnviando(false);
+    if (error) return setCorreoError(traducirError(error.message));
+    if (data.user && session) setSession({ ...session, user: data.user });
+    setCorreoAbierto(false);
+    setCorreoNuevo('');
+    Alert.alert(
+      'Revisa tu correo',
+      `Te hemos enviado un enlace a ${nuevo}. Ábrelo para confirmar el cambio (mira también en spam). Hasta entonces sigues entrando con ${session?.user.email ?? 'tu correo actual'}.`
+    );
+  };
+
   const cerrarSesion = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -347,7 +373,7 @@ export default function MasScreen() {
   const inicial = (session?.user.email ?? '?').charAt(0).toUpperCase();
 
   return (
-    <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={amplio ? [styles.container, styles.rejilla] : styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={[styles.container, escritorio ? styles.centrado : null]} showsVerticalScrollIndicator={false}>
 <Escalonado>
       <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Más</Text>
 
@@ -531,6 +557,7 @@ export default function MasScreen() {
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>CUENTA</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
         <Fila tema={tema} icono="people-circle-outline" titulo="Invitar a la familia" detalle="Manda el enlace y los pasos para registrarse" onPress={invitar} />
+        <Fila tema={tema} icono="mail-outline" titulo="Cambiar correo" detalle={session?.user.new_email ? `Pendiente de confirmar: ${session.user.new_email}` : session?.user.email ?? undefined} onPress={() => { setCorreoNuevo(''); setCorreoError(''); setCorreoAbierto(true); }} />
         <Fila tema={tema} icono="log-out-outline" titulo="Cerrar sesión" color={tema.peligro} onPress={cerrarSesion} />
         <Fila tema={tema} icono="trash-outline" titulo="Borrar todos los datos" color={tema.peligro} onPress={confirmarBorrado} ultimo />
       </View>
@@ -538,7 +565,7 @@ export default function MasScreen() {
 
       </Grupo>
 
-      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Balanz · versión 1.0.0</Text>
+      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Balanz · versión {Constants.expoConfig?.version ?? ''}</Text>
       <Modal visible={saldoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setSaldoAbierto(false)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setSaldoAbierto(false)} />
@@ -566,6 +593,43 @@ export default function MasScreen() {
               </Presionable>
               <Presionable contenedor={{ flex: 2 }} style={[styles.botonHoja, { backgroundColor: tema.primario }]} onPress={guardarSaldo}>
                 <Text style={{ color: tema.primarioTexto, fontWeight: '800', fontSize: 16 }}>Guardar saldo</Text>
+              </Presionable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={correoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setCorreoAbierto(false)}>
+        <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setCorreoAbierto(false)} />
+          <View style={[styles.hoja, { backgroundColor: tema.fondo }]}>
+            <Text style={{ color: tema.texto, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 }}>Cambiar correo</Text>
+            <Text style={{ color: tema.textoSuave, fontSize: 13, marginTop: -6 }}>
+              Escribe el correo nuevo y te enviamos un enlace para confirmarlo. Tus datos no cambian.
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: tema.tarjeta, borderColor: tema.borde, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, height: 54 }}>
+              <Ionicons name="mail-outline" size={18} color={tema.textoSuave} />
+              <TextInput
+                accessibilityLabel="Correo nuevo"
+                style={{ color: tema.texto, fontSize: 16, flex: 1 }}
+                placeholder="correo@nuevo.com"
+                placeholderTextColor={tema.textoSuave}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                autoComplete="email"
+                value={correoNuevo}
+                onChangeText={setCorreoNuevo}
+                onSubmitEditing={cambiarCorreo}
+                autoFocus
+              />
+            </View>
+            {correoError ? <Text style={{ color: tema.peligro, fontSize: 13 }}>{correoError}</Text> : null}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Presionable contenedor={{ flex: 1 }} style={[styles.botonHoja, { backgroundColor: tema.tarjetaSuave }]} onPress={() => setCorreoAbierto(false)}>
+                <Text style={{ color: tema.texto, fontWeight: '700', fontSize: 16 }}>Cancelar</Text>
+              </Presionable>
+              <Presionable contenedor={{ flex: 2 }} style={[styles.botonHoja, { backgroundColor: tema.primario, opacity: correoEnviando || !correoNuevo.trim() ? 0.6 : 1 }]} onPress={cambiarCorreo}>
+                <Text style={{ color: tema.primarioTexto, fontWeight: '800', fontSize: 16 }}>{correoEnviando ? 'Enviando…' : 'Enviar enlace'}</Text>
               </Presionable>
             </View>
           </View>
@@ -601,6 +665,7 @@ const styles = StyleSheet.create({
   hoja: { padding: 20, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28, gap: 14 },
   botonHoja: { minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
+  centrado: { width: '100%', maxWidth: 760, alignSelf: 'center', paddingTop: 36, gap: 14 },
   titulo: { fontSize: 32, fontWeight: '800', marginBottom: 6 },
   rejilla: { display: 'block', columnCount: 2, columnGap: 14 } as object,
   perfil: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 22 },

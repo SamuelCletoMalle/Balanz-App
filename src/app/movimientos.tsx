@@ -94,7 +94,7 @@ export default function GastosScreen() {
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>('todo');
-  const [verFiltros, setVerFiltros] = useState(false);
+  const [verFiltros, setVerFiltros] = useState(amplio);
   const [desdeTexto, setDesdeTexto] = useState('');
   const [hastaTexto, setHastaTexto] = useState('');
   const [aviso, setAviso] = useState<{ texto: string; deshacer?: Gasto } | null>(null);
@@ -343,7 +343,7 @@ export default function GastosScreen() {
           <Ionicons name="chevron-forward" size={18} color={tema.textoSuave} />
         </Presionable>
       ) : null}
-      <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 820 : undefined, alignSelf: 'center' }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 980 : undefined, alignSelf: 'center' }}>
       <SectionList
         sections={secciones}
         keyExtractor={(g) => g.id}

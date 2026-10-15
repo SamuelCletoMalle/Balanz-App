@@ -58,7 +58,8 @@ export type Recurrente = {
   ultima: string; // 'YYYY-MM' del último mes generado ('' si ninguno)
   activo: number; // 0/1
   cada: number; // cada cuántos meses se repite: 1 (mensual), 2, 3, 6, 12 (anual)…
-  inicio: string; // 'YYYY-MM' del primer pago; ancla de las repeticiones ('' si es mensual)
+  inicio: string; // 'YYYY-MM' del primer pago; ancla de las repeticiones ('' = desde siempre)
+  hasta: string; // 'YYYY-MM' del último pago ('' = sin fin); sirve para pagos a plazos (p. ej. 12 cuotas)
 };
 
 export const FRECUENCIAS: { cada: number; nombre: string }[] = [
@@ -81,24 +82,51 @@ export function mesesEntre(a: string, b: string): number {
 
 /** Rellena los campos nuevos de un recurrente guardado antes de existir las frecuencias. */
 export function normalizarRecurrente(r: Recurrente): Recurrente {
-  return { ...r, cada: r.cada >= 1 ? r.cada : 1, inicio: r.inicio ?? '' };
+  return { ...r, cada: r.cada >= 1 ? r.cada : 1, inicio: r.inicio ?? '', hasta: r.hasta ?? '' };
 }
 
 /** ¿Le toca pagar a este recurrente en el mes `mes` ('YYYY-MM')? */
 export function tocaEnMes(r: Recurrente, mes: string): boolean {
   const cada = r.cada >= 1 ? r.cada : 1;
+  if (r.hasta && mes > r.hasta) return false;
+  if (r.inicio && mes < r.inicio) return false;
   if (cada === 1 || !r.inicio) return true;
-  const d = mesesEntre(r.inicio, mes);
-  return d >= 0 && d % cada === 0;
+  return mesesEntre(r.inicio, mes) % cada === 0;
 }
 
-/** Texto para la lista: "Día 5 de cada mes", "El 15 de marzo, cada año"… */
+/** Suma `n` meses a un 'YYYY-MM'. */
+export function sumarMeses(mes: string, n: number): string {
+  const [y, m] = mes.split('-').map(Number);
+  const f = new Date(y, m - 1 + n, 1);
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** "nov 2026" a partir de '2026-11'. */
+export function nombreMesCorto(mes: string): string {
+  return `${NOMBRES_MES[Number(mes.slice(5, 7)) - 1].slice(0, 3)} ${mes.slice(0, 4)}`;
+}
+
+/** Cuántos pagos quedan por hacer en total (0 = sin fin). */
+export function numeroDePagos(r: Recurrente): number {
+  if (!r.hasta || !r.inicio) return 0;
+  const cada = r.cada >= 1 ? r.cada : 1;
+  return Math.floor(mesesEntre(r.inicio, r.hasta) / cada) + 1;
+}
+
+/** Texto para la lista: "Día 5 de cada mes", "El 15 de marzo, cada año", "Día 5 de cada mes · 12 pagos"… */
 export function textoFrecuencia(r: Recurrente): string {
   const cada = r.cada >= 1 ? r.cada : 1;
-  if (cada === 1) return `Día ${r.dia} de cada mes`;
-  const mesInicio = r.inicio ? NOMBRES_MES[Number(r.inicio.slice(5, 7)) - 1] : '';
-  if (cada === 12) return mesInicio ? `El ${r.dia} de ${mesInicio}, cada año` : `Día ${r.dia}, cada año`;
-  return `Día ${r.dia}, cada ${cada} meses${mesInicio ? ` (desde ${mesInicio})` : ''}`;
+  let base: string;
+  if (cada === 1) base = `Día ${r.dia} de cada mes`;
+  else {
+    const mesInicio = r.inicio ? NOMBRES_MES[Number(r.inicio.slice(5, 7)) - 1] : '';
+    if (cada === 12) base = mesInicio ? `El ${r.dia} de ${mesInicio}, cada año` : `Día ${r.dia}, cada año`;
+    else base = `Día ${r.dia}, cada ${cada} meses${mesInicio ? ` (desde ${mesInicio})` : ''}`;
+  }
+  const pagos = numeroDePagos(r);
+  if (pagos > 0) return `${base} · ${pagos} pagos, hasta ${nombreMesCorto(r.hasta)}`;
+  if (r.inicio && cada === 1) return `${base} · desde ${nombreMesCorto(r.inicio)}`;
+  return base;
 }
 
 export type Meta = {

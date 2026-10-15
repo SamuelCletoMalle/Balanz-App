@@ -115,6 +115,7 @@ export function initDB() {
   const cr = columnas('recurrentes');
   anadirColumna('recurrentes', cr, 'cada', 'INTEGER NOT NULL DEFAULT 1');
   anadirColumna('recurrentes', cr, 'inicio', "TEXT NOT NULL DEFAULT ''");
+  anadirColumna('recurrentes', cr, 'hasta', "TEXT NOT NULL DEFAULT ''");
 
   const cm = columnas('metas');
   anadirColumna('metas', cm, 'fecha', "TEXT NOT NULL DEFAULT ''");
@@ -350,15 +351,15 @@ export function getRecurrentes(): Recurrente[] {
 
 export function insertRecurrente(r: Recurrente) {
   db.runSync(
-    'INSERT INTO recurrentes (id, descripcion, categoria, importe, tipo, dia, ultima, activo, cada, inicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
-    r.id, r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.ultima, r.activo, r.cada, r.inicio
+    'INSERT INTO recurrentes (id, descripcion, categoria, importe, tipo, dia, ultima, activo, cada, inicio, hasta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+    r.id, r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.ultima, r.activo, r.cada, r.inicio, r.hasta ?? ''
   );
 }
 
 export function updateRecurrente(r: Recurrente) {
   db.runSync(
-    'UPDATE recurrentes SET descripcion = ?, categoria = ?, importe = ?, tipo = ?, dia = ?, activo = ?, cada = ?, inicio = ? WHERE id = ?;',
-    r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.activo, r.cada, r.inicio, r.id
+    'UPDATE recurrentes SET descripcion = ?, categoria = ?, importe = ?, tipo = ?, dia = ?, activo = ?, cada = ?, inicio = ?, hasta = ? WHERE id = ?;',
+    r.descripcion, r.categoria, r.importe, r.tipo, r.dia, r.activo, r.cada, r.inicio, r.hasta ?? '', r.id
   );
 }
 
