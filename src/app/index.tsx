@@ -20,11 +20,13 @@ import { abrirNuevoMovimiento, useVersionDatos } from '../nuevo-estado';
 import { toque } from '../haptics';
 import { descargarGastosDeLaNube } from '../sync';
 import { proximosCobros, ProximoCobro } from '../recurrentes';
+import { saldosPorCuenta } from '../cuentas';
 import { useDisposicion, arriba } from '../layout';
 import {
   Gasto,
   contarPendientes,
   getGastos,
+  getFondosIniciales,
   getGastosPorCategoriaMesActual,
   getIngresosMesActual,
   getLimite,
@@ -41,6 +43,7 @@ export default function InicioScreen() {
   const introLista = useIntroLista();
   const version = useVersionDatos();
   const [saldo, setSaldo] = useState(0);
+  const [cuentas, setCuentas] = useState<Record<string, number>>({});
   const [totalMes, setTotalMes] = useState(0);
   const [ingresosMes, setIngresosMes] = useState(0);
   const [limite, setLimite] = useState(0);
@@ -56,7 +59,9 @@ export default function InicioScreen() {
     setIngresosMes(getIngresosMesActual());
     setLimite(getLimite());
     setPendientes(contarPendientes());
-    setUltimos(getGastos().slice(0, 5));
+    const todos = getGastos();
+    setUltimos(todos.slice(0, 5));
+    setCuentas(saldosPorCuenta(todos, getFondosIniciales()));
     setCobro(proximosCobros(30)[0] ?? null);
     setCategorias(getGastosPorCategoriaMesActual());
   }, []);
@@ -179,7 +184,7 @@ export default function InicioScreen() {
     </Tarjeta>
   ) : null;
 
-  const saldoTarjeta = <TarjetaSaldo saldo={saldo} totalMes={totalMes} ingresosMes={ingresosMes} limite={limite} sincronizando={sincronizando} />;
+  const saldoTarjeta = <TarjetaSaldo saldo={saldo} cuentas={cuentas} totalMes={totalMes} ingresosMes={ingresosMes} limite={limite} sincronizando={sincronizando} />;
 
   return (
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
