@@ -16,6 +16,8 @@ App de control de gastos e ingresos para **iOS, Android y web**.
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
 
+Hecho por **Samuel Cleto Malle** · [Portfolio](https://samuelcletomalle.github.io) · [GitHub](https://github.com/SamuelCletoMalle)
+
 </div>
 
 ---
