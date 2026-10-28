@@ -197,7 +197,7 @@ export default function InicioScreen() {
       )}
 
       {amplio ? (
-        <PanelEscritorio tarjetaSaldo={saldoTarjeta} avisoPendientes={avisoPendientes} tarjetaCobro={tarjetaCobro} totalMes={totalMes} ingresosMes={ingresosMes} categorias={categorias} />
+        <PanelEscritorio saldo={saldo} cuentas={cuentas} avisoPendientes={avisoPendientes} tarjetaCobro={tarjetaCobro} totalMes={totalMes} ingresosMes={ingresosMes} categorias={categorias} />
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           <Escalonado>
