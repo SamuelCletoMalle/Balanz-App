@@ -117,6 +117,7 @@ export function upsertGastoLocal(g: NuevoGasto, extendido: boolean) {
       descripcion: n.descripcion, categoria: n.categoria, importe: n.importe, fecha: n.fecha, tipo: n.tipo,
       etiquetas: n.etiquetas, moneda: n.moneda, importe_original: n.importe_original, divisiones: n.divisiones,
       ...(g.cuenta ? { cuenta: n.cuenta } : {}),
+      ...(g.metodo !== undefined ? { metodo: n.metodo, nota: n.nota } : {}),
     });
   } else {
     Object.assign(previo, { descripcion: n.descripcion, categoria: n.categoria, importe: n.importe, fecha: n.fecha });

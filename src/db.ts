@@ -122,6 +122,9 @@ export function initDB() {
   anadirColumna('metas', cm, 'aporte', 'REAL NOT NULL DEFAULT 0');
   anadirColumna('metas', cm, 'ultimaAporte', "TEXT NOT NULL DEFAULT ''");
 
+  anadirColumna('gastos', cg, 'metodo', "TEXT NOT NULL DEFAULT ''");
+  anadirColumna('gastos', cg, 'nota', "TEXT NOT NULL DEFAULT ''");
+
   const cp = columnas('pendientes');
   anadirColumna('pendientes', cp, 'tipo', "TEXT NOT NULL DEFAULT 'gasto'");
 }
@@ -137,9 +140,9 @@ export function getGastos(): Gasto[] {
 export function insertGasto(nuevo: NuevoGasto) {
   const g = normalizar(nuevo);
   db.runSync(
-    `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, foto, cuenta)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    g.id, g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta
+    `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, foto, cuenta, metodo, nota)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    g.id, g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta, g.metodo, g.nota
   );
 }
 
@@ -147,15 +150,25 @@ export function updateGasto(nuevo: NuevoGasto) {
   const g = normalizar(nuevo);
   db.runSync(
     `UPDATE gastos SET descripcion = ?, categoria = ?, importe = ?, fecha = ?, tipo = ?, etiquetas = ?, moneda = ?,
-       importe_original = ?, divisiones = ?, foto = ?, cuenta = ? WHERE id = ?;`,
-    g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta, g.id
+       importe_original = ?, divisiones = ?, foto = ?, cuenta = ?, metodo = ?, nota = ? WHERE id = ?;`,
+    g.descripcion, g.categoria, g.importe, g.fecha, g.tipo, g.etiquetas, g.moneda, g.importe_original, g.divisiones, g.foto, g.cuenta, g.metodo, g.nota, g.id
   );
 }
 
 /** Inserta o actualiza un gasto que viene de la nube (no toca la foto local). */
 export function upsertGastoLocal(g: NuevoGasto, extendido: boolean) {
   const n = normalizar(g);
-  if (extendido && g.cuenta) {
+  if (extendido && g.cuenta && g.metodo !== undefined) {
+    db.runSync(
+      `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, cuenta, metodo, nota)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET descripcion=excluded.descripcion, categoria=excluded.categoria, importe=excluded.importe,
+         fecha=excluded.fecha, tipo=excluded.tipo, etiquetas=excluded.etiquetas, moneda=excluded.moneda,
+         importe_original=excluded.importe_original, divisiones=excluded.divisiones, cuenta=excluded.cuenta,
+         metodo=excluded.metodo, nota=excluded.nota;`,
+      n.id, n.descripcion, n.categoria, n.importe, n.fecha, n.tipo, n.etiquetas, n.moneda, n.importe_original, n.divisiones, n.cuenta, n.metodo, n.nota
+    );
+  } else if (extendido && g.cuenta) {
     db.runSync(
       `INSERT INTO gastos (id, descripcion, categoria, importe, fecha, tipo, etiquetas, moneda, importe_original, divisiones, cuenta)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

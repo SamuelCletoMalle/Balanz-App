@@ -8,7 +8,7 @@ import { Text, TextInput } from '../components/Texto';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { getGastos, getEtiquetas, contarPendientes, Gasto, nombreCuenta } from '../db';
+import { getGastos, getEtiquetas, contarPendientes, Gasto, nombreCuenta, nombreMetodo, METODOS_PAGO } from '../db';
 import Presionable from '../components/Presionable';
 import CampanaPendientes from '../components/CampanaPendientes';
 import { exito } from '../haptics';
@@ -93,6 +93,8 @@ export default function GastosScreen() {
   const [sincronizando, setSincronizando] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<string | null>(null);
+  const [filtroTipo, setFiltroTipo] = useState<'gasto' | 'ingreso' | null>(null);
+  const [filtroMetodo, setFiltroMetodo] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>('todo');
   const [verFiltros, setVerFiltros] = useState(amplio);
   const [desdeTexto, setDesdeTexto] = useState('');
@@ -133,16 +135,20 @@ export default function GastosScreen() {
     return gastos.filter(
       (g) =>
         (!filtro || g.categoria === filtro) &&
+        (!filtroTipo || g.tipo === filtroTipo) &&
+        (!filtroMetodo || g.metodo === filtroMetodo) &&
         (!filtroEtiqueta || g.etiquetas.split(',').includes(filtroEtiqueta)) &&
         (!rango || (g.fecha >= rango.desde && g.fecha <= rango.hasta)) &&
-        (!q || g.descripcion.toLowerCase().includes(q) || g.etiquetas.includes(q.replace('#', '')))
+        (!q || g.descripcion.toLowerCase().includes(q) || g.nota.toLowerCase().includes(q) || g.etiquetas.includes(q.replace('#', '')))
     );
-  }, [gastos, busqueda, filtro, filtroEtiqueta, rango]);
+  }, [gastos, busqueda, filtro, filtroTipo, filtroMetodo, filtroEtiqueta, rango]);
 
-  const hayFiltro = !!(filtro || filtroEtiqueta || rango || busqueda.trim());
-  const filtrosActivos = (filtro ? 1 : 0) + (filtroEtiqueta ? 1 : 0) + (periodo !== 'todo' ? 1 : 0);
+  const hayFiltro = !!(filtro || filtroTipo || filtroMetodo || filtroEtiqueta || rango || busqueda.trim());
+  const filtrosActivos = (filtro ? 1 : 0) + (filtroTipo ? 1 : 0) + (filtroMetodo ? 1 : 0) + (filtroEtiqueta ? 1 : 0) + (periodo !== 'todo' ? 1 : 0);
   const limpiarFiltros = () => {
     setFiltro(null);
+    setFiltroTipo(null);
+    setFiltroMetodo(null);
     setFiltroEtiqueta(null);
     setPeriodo('todo');
     setDesdeTexto('');
@@ -267,6 +273,19 @@ export default function GastosScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {getCategorias().map((c) => (
           <Chip key={c.nombre} texto={c.nombre} icono={c.icono} color={c.color} activo={filtro === c.nombre} onPress={() => setFiltro(filtro === c.nombre ? null : c.nombre)} />
+        ))}
+      </ScrollView>
+
+      <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Tipo</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <Chip texto="Gastos" icono="arrow-up-outline" activo={filtroTipo === 'gasto'} onPress={() => setFiltroTipo(filtroTipo === 'gasto' ? null : 'gasto')} />
+        <Chip texto="Ingresos" icono="arrow-down-outline" activo={filtroTipo === 'ingreso'} onPress={() => setFiltroTipo(filtroTipo === 'ingreso' ? null : 'ingreso')} />
+      </ScrollView>
+
+      <Text style={[styles.filtroTitulo, { color: tema.textoSuave }]}>Método de pago</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {METODOS_PAGO.map((mp) => (
+          <Chip key={mp.id} texto={mp.nombre} icono={mp.icono} activo={filtroMetodo === mp.id} onPress={() => setFiltroMetodo(filtroMetodo === mp.id ? null : mp.id)} />
         ))}
       </ScrollView>
 
@@ -413,6 +432,7 @@ export default function GastosScreen() {
                 <Text style={[styles.categoria, { color: tema.textoSuave }]} numberOfLines={1}>
                   {item.tipo === 'traspaso' ? 'Traspaso entre cuentas' : item.categoria}
                   {item.cuenta && item.cuenta !== 'banco' && item.tipo !== 'traspaso' ? ` · ${nombreCuenta(item.cuenta)}` : ''}
+                  {item.metodo && item.tipo !== 'traspaso' ? ` · ${nombreMetodo(item.metodo)}` : ''}
                   {item.etiquetas ? ` · ${item.etiquetas.split(',').map((e) => `#${e}`).join(' ')}` : ''}
                 </Text>
               </View>

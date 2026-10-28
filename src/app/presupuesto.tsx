@@ -15,11 +15,11 @@ import { Text, TextInput } from '../components/Texto';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  getTotalMesActual,
-  getIngresosMesActual,
+  getTotalMes,
   getLimite,
   setLimite,
-  getGastosPorCategoriaMesActual,
+  getGastosPorCategoria,
+  sumarMeses,
   getTotalesUltimosMeses,
   getPresupuestosCategoria,
   setPresupuestoCategoria,
@@ -35,7 +35,7 @@ import { proximosCobros, ProximoCobro } from '../recurrentes';
 import { comprobarPresupuestos } from '../avisos';
 import { getCategorias, infoCategoria, formatoEuro, formatoFecha, MESES_CORTOS, useTema } from '../tema';
 import { Escalonado, Segmentos, useQuieto } from '../components/ui';
-import GastoPorCategoria from '../components/GastoPorCategoria';
+import DonutCategorias from '../components/DonutCategorias';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Vista = 'mes' | 'cuentas' | 'evolucion';
@@ -68,6 +68,9 @@ export default function ResumenScreen() {
   const deLaRuta: Vista = pedida === 'cuentas' || pedida === 'evolucion' ? pedida : 'mes';
   const vista: Vista = elegida && elegida.para === pedida ? elegida.v : deLaRuta;
   const setVista = (v: Vista) => setElegida({ para: pedida, v });
+  // Mes que se está mirando (el actual al abrir); con las flechas se ven los anteriores.
+  const [mesVista, setMesVista] = useState(mesActual());
+  const [gastadoPrevio, setGastadoPrevio] = useState(0);
   const [gastado, setGastado] = useState(0);
   const [ingresos, setIngresos] = useState(0);
   const [limite, setLimiteState] = useState(0);
@@ -117,10 +120,11 @@ export default function ResumenScreen() {
   const [valorCat, setValorCat] = useState('');
 
   const cargar = useCallback(() => {
-    setGastado(getTotalMesActual());
-    setIngresos(getIngresosMesActual());
+    setGastado(getTotalMes(mesVista, 'gasto'));
+    setIngresos(getTotalMes(mesVista, 'ingreso'));
+    setGastadoPrevio(getTotalMes(sumarMeses(mesVista, -1), 'gasto'));
     setLimiteState(getLimite());
-    setPorCategoria(getGastosPorCategoriaMesActual());
+    setPorCategoria(getGastosPorCategoria(mesVista));
     setPresupuestos(getPresupuestosCategoria());
     setMeses(getTotalesUltimosMeses(6));
     setCobros(proximosCobros(30));
@@ -131,7 +135,7 @@ export default function ResumenScreen() {
       gastos: todos.filter((g) => g.tipo === 'gasto').reduce((s, g) => s + g.importe, 0),
       saldo: getSaldoTotal(),
     });
-  }, []);
+  }, [mesVista]);
 
   useFocusEffect(cargar);
 
@@ -207,26 +211,64 @@ export default function ResumenScreen() {
       )}
 
       <Grupo amplio={amplio} clave="mes" activo={vista === 'mes'}>
-      <View style={[styles.dosColumnas, abarcar]}>
-        <View style={[styles.mini, { backgroundColor: tema.tarjeta }]}>
-          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>INGRESOS</Text>
-          <Text style={{ color: tema.exito, fontSize: 20, fontWeight: '800' }}>{formatoEuro(ingresos)}</Text>
+      <View style={styles.selectorMes}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Mes anterior" hitSlop={10} onPress={() => setMesVista(sumarMeses(mesVista, -1))} style={[styles.flechaMes, { backgroundColor: tema.tarjeta }]}>
+          <Ionicons name="chevron-back" size={20} color={tema.texto} />
+        </TouchableOpacity>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ color: tema.texto, fontSize: 18, fontWeight: '800' }}>
+            {NOMBRES_MES[Number(mesVista.slice(5, 7)) - 1].charAt(0).toUpperCase() + NOMBRES_MES[Number(mesVista.slice(5, 7)) - 1].slice(1)} {mesVista.slice(0, 4)}
+          </Text>
+          {mesVista !== mesActual() ? (
+            <TouchableOpacity accessibilityRole="button" onPress={() => setMesVista(mesActual())} hitSlop={8}>
+              <Text style={{ color: tema.primario, fontSize: 12, fontWeight: '700' }}>Volver a este mes</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-        <View style={[styles.mini, { backgroundColor: tema.tarjeta }]}>
-          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>BALANCE</Text>
-          <Text style={{ color: balance >= 0 ? tema.exito : tema.peligro, fontSize: 20, fontWeight: '800' }}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Mes siguiente"
+          accessibilityState={{ disabled: mesVista >= mesActual() }}
+          disabled={mesVista >= mesActual()}
+          hitSlop={10}
+          onPress={() => setMesVista(sumarMeses(mesVista, 1))}
+          style={[styles.flechaMes, { backgroundColor: tema.tarjeta, opacity: mesVista >= mesActual() ? 0.35 : 1 }]}
+        >
+          <Ionicons name="chevron-forward" size={20} color={tema.texto} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.dosColumnas, abarcar]}>
+        <View style={[styles.mini, { backgroundColor: tema.tarjeta, padding: 12 }]}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>INGRESOS</Text>
+          <Text style={{ color: tema.exito, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] }} numberOfLines={1}>{formatoEuro(ingresos)}</Text>
+        </View>
+        <View style={[styles.mini, { backgroundColor: tema.tarjeta, padding: 12 }]}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>GASTOS</Text>
+          <Text style={{ color: tema.texto, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] }} numberOfLines={1}>{formatoEuro(gastado)}</Text>
+        </View>
+        <View style={[styles.mini, { backgroundColor: tema.tarjeta, padding: 12 }]}>
+          <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>ME QUEDA</Text>
+          <Text style={{ color: balance >= 0 ? tema.exito : tema.peligro, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] }} numberOfLines={1}>
             {balance >= 0 ? '+' : ''}
             {formatoEuro(balance)}
           </Text>
         </View>
       </View>
-      {ingresos > 0 ? (
-        <Text style={[{ color: tema.textoSuave, fontSize: 12, marginTop: -6, marginLeft: 6 }, abarcar]}>
-          Has ahorrado el {Math.max(0, Math.round((balance / ingresos) * 100))} % de tus ingresos este mes.
+      {gastadoPrevio > 0 ? (
+        <Text style={[{ color: tema.textoSuave, fontSize: 13, lineHeight: 19, marginLeft: 6 }, abarcar]}>
+          {gastado === gastadoPrevio
+            ? `Has gastado lo mismo que en ${NOMBRES_MES[Number(sumarMeses(mesVista, -1).slice(5, 7)) - 1]}.`
+            : `Has gastado un ${Math.round((Math.abs(gastado - gastadoPrevio) / gastadoPrevio) * 100)} % ${gastado < gastadoPrevio ? 'menos' : 'más'} que en ${NOMBRES_MES[Number(sumarMeses(mesVista, -1).slice(5, 7)) - 1]} (${formatoEuro(gastadoPrevio)}).`}
+          {ingresos > 0 ? ` Has ahorrado el ${Math.max(0, Math.round((balance / ingresos) * 100))} % de tus ingresos.` : ''}
+        </Text>
+      ) : ingresos > 0 ? (
+        <Text style={[{ color: tema.textoSuave, fontSize: 13, marginLeft: 6 }, abarcar]}>
+          Has ahorrado el {Math.max(0, Math.round((balance / ingresos) * 100))} % de tus ingresos.
         </Text>
       ) : null}
 
-      <GastoPorCategoria filas={porCategoria} />
+      <DonutCategorias filas={porCategoria} />
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
         <View style={styles.fila}>
@@ -404,6 +446,8 @@ export default function ResumenScreen() {
 const styles = StyleSheet.create({
   enlaceInforme: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: 16 },
   container: { paddingTop: arriba(60), paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
+  selectorMes: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  flechaMes: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   centrado: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingTop: 36, gap: 18 },
   titulo: { fontSize: 32, fontWeight: '800' },
   dosColumnas: { flexDirection: 'row', gap: 12 },

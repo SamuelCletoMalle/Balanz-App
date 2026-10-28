@@ -142,7 +142,7 @@ export default function PresupuestoContenido() {
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
         <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>PRESUPUESTO POR CATEGORÍA (toca para fijar)</Text>
-        {getCategorias().map((cat) => {
+        {getCategorias('gasto').map((cat) => {
           const gasto = gastoCat(cat.nombre);
           const lim = presupuestos[cat.nombre];
           if (!lim && gasto === 0) {

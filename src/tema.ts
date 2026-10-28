@@ -9,15 +9,22 @@ import { usePreferencias, getPreferencias } from './accesibilidad';
 export type IconoNombre = keyof typeof Ionicons.glyphMap;
 
 // Colores elegidos para que el texto blanco sobre ellos cumpla el contraste AA (4,5:1).
-export type Categoria = { nombre: string; icono: IconoNombre; color: string };
+export type Categoria = { nombre: string; icono: IconoNombre; color: string; /** Solo sale al apuntar ingresos. */ ingreso?: boolean };
 
 export const CATEGORIAS_BASE: Categoria[] = [
   { nombre: 'Alimentación', icono: 'cart-outline', color: '#15803d' },
+  { nombre: 'Comidas fuera', icono: 'restaurant-outline', color: '#c2410c' },
   { nombre: 'Transporte', icono: 'car-outline', color: '#1d4ed8' },
   { nombre: 'Suscripciones', icono: 'repeat-outline', color: '#7e22ce' },
   { nombre: 'Salud', icono: 'medkit-outline', color: '#b91c1c' },
   { nombre: 'Ocio', icono: 'game-controller-outline', color: '#b45309' },
   { nombre: 'Vivienda', icono: 'home-outline', color: '#0f766e' },
+  { nombre: 'Hogar', icono: 'bed-outline', color: '#0e7490' },
+  { nombre: 'Ropa', icono: 'shirt-outline', color: '#be185d' },
+  { nombre: 'Regalos', icono: 'gift-outline', color: '#a21caf' },
+  { nombre: 'Nómina', icono: 'briefcase-outline', color: '#047857', ingreso: true },
+  { nombre: 'Freelance', icono: 'laptop-outline', color: '#0369a1', ingreso: true },
+  { nombre: 'Extras', icono: 'sparkles-outline', color: '#4d7c0f', ingreso: true },
   { nombre: 'Otros', icono: 'ellipsis-horizontal-circle-outline', color: '#475569' },
 ];
 // Categorías propias de la cuenta (se cargan desde categorias.ts). "Otros" siempre va la última.
@@ -27,9 +34,18 @@ export function setCategoriasExtra(lista: Categoria[]) {
   categoriasExtra = lista;
 }
 
-export function getCategorias(): Categoria[] {
+/**
+ * Las categorías de la cuenta. Sin argumento salen todas (para filtros y para pintar cualquier movimiento);
+ * con `tipo` solo las que sirven para gastos o para ingresos. "Otros" va siempre la última.
+ */
+export function getCategorias(tipo?: 'gasto' | 'ingreso'): Categoria[] {
   const otros = CATEGORIAS_BASE[CATEGORIAS_BASE.length - 1];
-  return [...CATEGORIAS_BASE.slice(0, -1), ...categoriasExtra, otros];
+  const base = CATEGORIAS_BASE.slice(0, -1);
+  // Una categoría propia que se llame igual que una de serie no se repite.
+  const extras = categoriasExtra.filter((e) => !base.some((b) => b.nombre.toLowerCase() === e.nombre.toLowerCase()) && e.nombre !== otros.nombre);
+  if (tipo === 'ingreso') return [...base.filter((c) => c.ingreso), otros];
+  if (tipo === 'gasto') return [...base.filter((c) => !c.ingreso), ...extras, otros];
+  return [...base, ...extras, otros];
 }
 
 /** Las categorías usan tonos oscuros (para llevar texto blanco encima); sobre fondo oscuro se mezclan con blanco para que el icono se vea. */

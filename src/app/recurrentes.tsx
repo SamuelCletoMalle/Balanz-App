@@ -41,6 +41,10 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
 
   useFocusEffect(recargar);
 
+  // Las suscripciones (Netflix, gimnasio…) agrupadas: cuánto suman al mes y al año, contando los pagos que no son mensuales.
+  const suscripciones = lista.filter((r) => r.activo && r.tipo === 'gasto' && r.categoria === 'Suscripciones');
+  const subsMes = suscripciones.reduce((s, r) => s + r.importe / (r.cada >= 1 ? r.cada : 1), 0);
+
   const abrir = (r: Recurrente) => {
     setEditando(r);
     setDescripcion(r.descripcion);
@@ -137,6 +141,30 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
 <Escalonado>
+        {suscripciones.length > 0 ? (
+          <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
+            <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>TUS SUSCRIPCIONES</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 18 }}>
+              <View>
+                <Text style={{ color: tema.texto, fontSize: 26, fontWeight: '800', letterSpacing: -0.6, fontVariant: ['tabular-nums'] }}>{formatoEuro(subsMes)}</Text>
+                <Text style={{ color: tema.textoSuave, fontSize: 12 }}>al mes</Text>
+              </View>
+              <View>
+                <Text style={{ color: tema.texto, fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{formatoEuro(subsMes * 12)}</Text>
+                <Text style={{ color: tema.textoSuave, fontSize: 12 }}>al año</Text>
+              </View>
+            </View>
+            {suscripciones.map((r) => (
+              <View key={r.id} style={styles.fila}>
+                <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                  {r.descripcion}
+                </Text>
+                <Text style={{ color: tema.textoSuave, fontSize: 13, fontVariant: ['tabular-nums'] }}>{formatoEuro(r.importe / (r.cada >= 1 ? r.cada : 1))} / mes</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         {sospechosas.length > 0 ? (
           <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
             <Text style={[styles.etiqueta, { color: tema.textoSuave }]}>DETECTADAS AUTOMÁTICAMENTE</Text>
@@ -297,7 +325,7 @@ export function RecurrentesContenido({ embebido = false }: { embebido?: boolean 
               {pagos > 0 ? `, ${pagos} veces en total (hasta ${nombreMesCorto(sumarMeses(desde, (pagos - 1) * cada))}). Después se para solo.` : ', sin fecha de fin.'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {getCategorias().map((c) => {
+              {getCategorias(tipo).map((c) => {
                 const activa = categoria === c.nombre;
                 return (
                   <TouchableOpacity accessibilityRole="button"

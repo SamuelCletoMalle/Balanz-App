@@ -19,6 +19,18 @@ export type CuentaId = (typeof CUENTAS)[number]['id'];
 
 export const nombreCuenta = (id: string) => CUENTAS.find((x) => x.id === id)?.nombre ?? 'Cuenta bancaria';
 
+/** Cómo se pagó (o se cobró) un movimiento. Es aparte de la cuenta: se puede pagar con Bizum desde la cuenta bancaria. */
+export const METODOS_PAGO = [
+  { id: 'tarjeta', nombre: 'Tarjeta', icono: 'card-outline' },
+  { id: 'efectivo', nombre: 'Efectivo', icono: 'cash-outline' },
+  { id: 'bizum', nombre: 'Bizum', icono: 'phone-portrait-outline' },
+  { id: 'transferencia', nombre: 'Transferencia', icono: 'swap-horizontal-outline' },
+  { id: 'domiciliacion', nombre: 'Domiciliación', icono: 'repeat-outline' },
+  { id: 'otro', nombre: 'Otro', icono: 'ellipsis-horizontal-circle-outline' },
+] as const;
+
+export const nombreMetodo = (id: string) => METODOS_PAGO.find((x) => x.id === id)?.nombre ?? '';
+
 export type Division = { nombre: string; importe: number; pagado: boolean };
 
 export type Gasto = {
@@ -29,6 +41,8 @@ export type Gasto = {
   fecha: string;
   tipo: TipoMovimiento;
   cuenta: string; // 'efectivo' | 'banco' | 'ahorros': de dónde sale o a dónde entra el dinero
+  metodo: string; // 'tarjeta' | 'efectivo' | 'bizum'…: cómo se pagó ('' si no se indicó)
+  nota: string; // texto libre opcional
   etiquetas: string; // "vacaciones,trabajo"
   moneda: string;
   importe_original: number | null;
@@ -148,6 +162,8 @@ export function normalizar(g: NuevoGasto): Gasto {
   return {
     tipo: 'gasto',
     cuenta: 'banco',
+    metodo: '',
+    nota: '',
     etiquetas: '',
     moneda: 'EUR',
     importe_original: null,

@@ -19,7 +19,7 @@ import { usePreferencias } from '../accesibilidad';
 import { getCategorias, useTema } from '../tema';
 import NuevaCategoria from './NuevaCategoria';
 import { subirPerfil } from '../sync';
-import { Tipo, TipoMovimiento, Division, CUENTAS, buscarRegla, leerDivisiones } from '../db';
+import { Tipo, TipoMovimiento, Division, CUENTAS, METODOS_PAGO, buscarRegla, leerDivisiones } from '../db';
 import { MONEDAS, SIMBOLOS, convertirAEuros } from '../divisas';
 
 export type DatosGasto = {
@@ -28,6 +28,8 @@ export type DatosGasto = {
   importe: number; // EUR
   tipo: Tipo;
   cuenta: string;
+  metodo: string;
+  nota: string;
   etiquetas: string;
   moneda: string;
   importe_original: number | null;
@@ -41,6 +43,8 @@ export type InicialGasto = {
   importe: number | null;
   tipo?: TipoMovimiento;
   cuenta?: string;
+  metodo?: string;
+  nota?: string;
   etiquetas?: string;
   moneda?: string;
   importe_original?: number | null;
@@ -89,6 +93,8 @@ export default function GastoModal({
   const [categoria, setCategoria] = useState(getCategorias()[0].nombre);
   const [creandoCategoria, setCreandoCategoria] = useState(false);
   const [cuenta, setCuenta] = useState('banco');
+  const [metodo, setMetodo] = useState('');
+  const [notaTexto, setNotaTexto] = useState('');
   const [importe, setImporte] = useState('');
   const [moneda, setMoneda] = useState('EUR');
   const [etiquetas, setEtiquetas] = useState('');
@@ -103,6 +109,8 @@ export default function GastoModal({
     categoriaManual.current = !!inicial;
     setTipo(inicial ? (inicial.tipo === 'ingreso' ? 'ingreso' : 'gasto') : (tipoInicial ?? 'gasto'));
     setCuenta(inicial?.cuenta || 'banco');
+    setMetodo(inicial?.metodo ?? '');
+    setNotaTexto(inicial?.nota ?? '');
     setDescripcion(inicial?.descripcion ?? '');
     setCategoria(inicial?.categoria ?? getCategorias()[0].nombre);
     setMoneda(inicial?.moneda ?? 'EUR');
@@ -190,6 +198,8 @@ export default function GastoModal({
       importe: euros,
       tipo,
       cuenta,
+      metodo,
+      nota: notaTexto.trim(),
       etiquetas: Array.from(new Set(tags)).join(','),
       moneda,
       importe_original: moneda === 'EUR' ? null : importeNum,
@@ -237,7 +247,11 @@ export default function GastoModal({
               {(['gasto', 'ingreso'] as Tipo[]).map((t) => (
                 <TouchableOpacity accessibilityRole="button"
                   key={t}
-                  onPress={() => setTipo(t)}
+                  onPress={() => {
+                    setTipo(t);
+                    // Los ingresos tienen sus propias categorías (nómina, freelance…): si la elegida no sirve, se cambia.
+                    if (!getCategorias(t).some((c) => c.nombre === categoria)) setCategoria(getCategorias(t)[0].nombre);
+                  }}
                   style={[styles.segmentoOpcion, tipo === t && { backgroundColor: t === 'gasto' ? tema.peligro : tema.exito }]}
                 >
                   <Text style={{ color: tipo === t ? '#fff' : tema.texto, fontWeight: '700' }}>
@@ -286,7 +300,7 @@ export default function GastoModal({
             />
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {getCategorias().map((c) => {
+              {getCategorias(tipo).map((c) => {
                 const activa = categoria === c.nombre;
                 return (
                   <TouchableOpacity accessibilityRole="button"
@@ -338,6 +352,37 @@ export default function GastoModal({
                   </TouchableOpacity>
                 );
               })}
+            </View>
+
+            <Text style={{ color: tema.textoSuave, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>{tipo === 'gasto' ? 'MÉTODO DE PAGO' : 'MÉTODO DE COBRO'}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {METODOS_PAGO.map((m) => {
+                const activa = metodo === m.id;
+                return (
+                  <TouchableOpacity accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    key={m.id}
+                    // Tocar el método elegido otra vez lo quita.
+                    onPress={() => setMetodo(activa ? '' : m.id)}
+                    style={[styles.chip, { backgroundColor: activa ? tema.primario : tema.tarjetaSuave }]}
+                  >
+                    <Ionicons name={m.icono} size={16} color={activa ? tema.primarioTexto : tema.textoSuave} />
+                    <Text style={[styles.chipTexto, { color: activa ? tema.primarioTexto : tema.texto }]}>{m.nombre}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={[styles.campo, { backgroundColor: tema.tarjetaSuave }]}>
+              <Ionicons name="document-text-outline" size={18} color={tema.textoSuave} />
+              <TextInput
+                style={[styles.campoInput, { color: tema.texto }]}
+                placeholder="Nota (opcional)"
+                placeholderTextColor={tema.textoSuave}
+                value={notaTexto}
+                onChangeText={setNotaTexto}
+                maxLength={300}
+              />
             </View>
 
             <View style={[styles.campo, { backgroundColor: tema.tarjetaSuave }]}>

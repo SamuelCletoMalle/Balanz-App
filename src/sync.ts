@@ -45,10 +45,11 @@ import type { Categoria } from './tema';
 const COLS_BASE = 'id, descripcion, categoria, importe, fecha';
 const COLS_EXT = `${COLS_BASE}, tipo, etiquetas, moneda, importe_original, divisiones`;
 const COLS_CUENTA = `${COLS_EXT}, cuenta`;
+const COLS_NOTA = `${COLS_CUENTA}, metodo, nota`;
 
 // Si la nube todavía no tiene las columnas nuevas (migración SQL sin ejecutar) se sigue
 // sincronizando solo lo básico, sin romper nada.
-let nubeNivel: 0 | 1 | 2 = 2;
+let nubeNivel: 0 | 1 | 2 | 3 = 3;
 
 async function usuarioId(): Promise<string | null> {
   const { data } = await supabase.auth.getUser();
@@ -92,9 +93,10 @@ export async function descargarGastosDeLaNube(): Promise<void> {
   if (!userId) return;
 
   // Según lo que tenga la tabla en la nube: 2 = con cuenta, 1 = con tipo/etiquetas/divisas, 0 = lo básico.
-  let nivel: 0 | 1 | 2 = 2;
+  let nivel: 0 | 1 | 2 | 3 = 3;
   let filas: Record<string, unknown>[] | null = null;
   for (const [columnas, n] of [
+    [COLS_NOTA, 3],
     [COLS_CUENTA, 2],
     [COLS_EXT, 1],
     [COLS_BASE, 0],
@@ -128,7 +130,8 @@ export async function descargarGastosDeLaNube(): Promise<void> {
               divisiones: (f.divisiones as string) ?? '',
             }
           : {}),
-        ...(nivel === 2 ? { cuenta: (f.cuenta as string) || 'banco' } : {}),
+        ...(nivel >= 2 ? { cuenta: (f.cuenta as string) || 'banco' } : {}),
+        ...(nivel === 3 ? { metodo: (f.metodo as string) ?? '', nota: (f.nota as string) ?? '' } : {}),
       },
       nivel >= 1
     );
@@ -172,6 +175,11 @@ export async function subirGastoANube(nuevo: NuevoGasto): Promise<boolean> {
     divisiones: g.divisiones,
   };
 
+  if (nubeNivel === 3) {
+    const { error } = await supabase.from('gastos').upsert({ ...ext, cuenta: g.cuenta, metodo: g.metodo, nota: g.nota });
+    if (!error) return true;
+    nubeNivel = 2;
+  }
   if (nubeNivel === 2) {
     const { error } = await supabase.from('gastos').upsert({ ...ext, cuenta: g.cuenta });
     if (!error) return true;

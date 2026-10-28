@@ -10,6 +10,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Crypto from 'expo-crypto';
 import { Gasto, NuevoGasto, fechaHoy, getFondosIniciales, getGastos, insertGasto, setFondosIniciales, sumaFondos } from './db';
 import { adivinarCategoria } from './captura';
+import { movimientosACsv } from './csv';
 import { datosDeAnio, generarLibroContabilidad } from './excel-contabilidad';
 import { filasPorBloques, filasPlanas, dineroInicioDeAnio, sinTildes, leerCsv, decodificarTexto, parecenCsv, type Fila } from './excel-lectura';
 import { subirGastoANube } from './sync';
@@ -53,6 +54,26 @@ export async function exportarGastosAExcel() {
     });
   }
   return ruta;
+}
+
+export async function exportarGastosACsv() {
+  const texto = movimientosACsv(getGastos());
+  const nombre = `balanz-movimientos-${fechaHoy()}.csv`;
+  if (Platform.OS === 'web') {
+    const blob = new Blob([texto], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return;
+  }
+  const ruta = FileSystem.cacheDirectory + nombre;
+  await FileSystem.writeAsStringAsync(ruta, texto);
+  if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(ruta, { mimeType: 'text/csv', dialogTitle: 'Exportar movimientos' });
 }
 
 function esDuplicado(a: Gasto, b: { descripcion: string; importe: number; fecha: string }) {

@@ -52,6 +52,8 @@ export function crearTraspaso(origen: string, destino: string, importe: number):
     fecha: fechaHoy(),
     tipo: 'traspaso',
     cuenta: origen,
+    metodo: '',
+    nota: '',
     etiquetas: '',
     moneda: 'EUR',
     importe_original: null,

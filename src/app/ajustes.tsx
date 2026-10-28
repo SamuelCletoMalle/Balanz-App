@@ -16,8 +16,10 @@ import { Alert } from '../dialogos';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { contarGastos, borrarTodosLosDatos, getReglas, getMetas, getRecurrentes, getFondosIniciales, setFondosIniciales, sumaFondos, getSaldoTotal } from '../db';
-import { exportarGastosAExcel, importarGastosDesdeExcel } from '../excel';
+import { exportarGastosAExcel, exportarGastosACsv, importarGastosDesdeExcel } from '../excel';
 import { exportarCopia, elegirYRestaurarCopia } from '../copia';
+import { cargarDatosDeEjemplo, hayDatosDeEjemplo, quitarDatosDeEjemplo } from '../ejemplo';
+import { notificarCambioDatos } from '../nuevo-estado';
 import Constants from 'expo-constants';
 import { supabase } from '../supabase';
 import { correoValido, traducirError, urlRedireccion } from '../autenticacion';
@@ -167,6 +169,7 @@ export default function MasScreen() {
   // Saldo disponible: se escribe lo que hay de verdad y la diferencia se reparte en el dinero inicial (cuenta bancaria),
   // así los movimientos no se tocan y el saldo cuadra con la realidad.
   const [saldoAbierto, setSaldoAbierto] = useState(false);
+  const [hayEjemplo, setHayEjemplo] = useState(() => hayDatosDeEjemplo());
   const [correoAbierto, setCorreoAbierto] = useState(false);
   const [correoNuevo, setCorreoNuevo] = useState('');
   const [correoError, setCorreoError] = useState('');
@@ -335,6 +338,35 @@ export default function MasScreen() {
       Alert.alert('Error', 'No se pudo importar el archivo.');
     } finally {
       setCargando(false);
+    }
+  };
+
+  const alternarEjemplo = () => {
+    if (hayEjemplo) {
+      Alert.alert('Quitar los datos de ejemplo', 'Se borran solo los movimientos y la meta de ejemplo. Lo que hayas apuntado tú no se toca.', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Quitar',
+          style: 'destructive',
+          onPress: () => {
+            quitarDatosDeEjemplo();
+            setHayEjemplo(false);
+            notificarCambioDatos();
+          },
+        },
+      ]);
+    } else {
+      Alert.alert('Cargar datos de ejemplo', 'Se añaden unos dos meses de movimientos de mentira para ver cómo queda la app. Luego los puedes quitar de un toque.', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cargar',
+          onPress: () => {
+            cargarDatosDeEjemplo();
+            setHayEjemplo(true);
+            notificarCambioDatos();
+          },
+        },
+      ]);
     }
   };
 
@@ -544,10 +576,12 @@ export default function MasScreen() {
           <ActivityIndicator style={{ padding: 20 }} color={tema.primario} />
         ) : (
           <>
-            <Fila tema={tema} icono="download-outline" titulo="Exportar a Excel" onPress={exportar} />
+            <Fila tema={tema} icono="download-outline" titulo="Exportar a Excel" detalle="Contabilidad del año, un mes por hoja" onPress={exportar} />
+            <Fila tema={tema} icono="document-text-outline" titulo="Exportar a CSV" detalle="Todos los movimientos en una lista" onPress={() => exportarGastosACsv().catch(() => Alert.alert('No se pudo exportar', 'Inténtalo de nuevo.'))} />
             <Fila tema={tema} icono="push-outline" titulo="Importar desde Excel o CSV" onPress={importar} />
             <Fila tema={tema} icono="shield-checkmark-outline" titulo="Guardar copia de seguridad" detalle="Todo en un archivo: movimientos, metas, recurrentes…" onPress={hacerCopia} />
-            <Fila tema={tema} icono="refresh-outline" titulo="Restaurar una copia" onPress={restaurar} ultimo />
+            <Fila tema={tema} icono="refresh-outline" titulo="Restaurar una copia" onPress={restaurar} />
+            <Fila tema={tema} icono={hayEjemplo ? 'close-circle-outline' : 'flask-outline'} titulo={hayEjemplo ? 'Quitar datos de ejemplo' : 'Cargar datos de ejemplo'} detalle={hayEjemplo ? 'Borra solo lo de ejemplo' : 'Dos meses de movimientos para probar la app'} onPress={alternarEjemplo} ultimo />
           </>
         )}
       </View>

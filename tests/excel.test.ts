@@ -9,7 +9,7 @@ import { datosDeAnio, generarLibroContabilidad } from '../src/excel-contabilidad
 import type { Gasto } from '../src/db-comun';
 
 const g = (id: string, fecha: string, importe: number, tipo: 'gasto' | 'ingreso', descripcion: string): Gasto => ({
-  id, fecha, importe, tipo, descripcion, categoria: 'Otros', cuenta: 'banco', etiquetas: '', moneda: 'EUR', importe_original: null, divisiones: '', foto: '',
+  id, fecha, importe, tipo, descripcion, categoria: 'Otros', cuenta: 'banco', metodo: '', nota: '', etiquetas: '', moneda: 'EUR', importe_original: null, divisiones: '', foto: '',
 });
 
 test('el libro anual tiene Inicio y 12 meses, con totales y fórmulas', async () => {
