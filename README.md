@@ -1,22 +1,19 @@
 <div align="center">
 
-<img src="assets/images/icon.png" alt="Logo de Balanz" width="110" />
+<a href="https://balanz-app.vercel.app"><img src="docs/banner.svg" width="960" alt="Balanz — Tu dinero, en equilibrio. App de control de gastos e ingresos para móvil y web"></a>
 
-# Balanz
+<br><br>
 
-**Tu dinero, en equilibrio.**
-App de control de gastos e ingresos para **iOS, Android y web**.
+<a href="https://balanz-app.vercel.app"><img src="https://img.shields.io/badge/Probar_la_web-balanz--app.vercel.app-bef264?style=for-the-badge&logo=vercel&logoColor=0a0a0a&labelColor=18181b" alt="Probar la web"></a>
 
-[![Probar la web](https://img.shields.io/badge/Probar_la_web-balanz--app.vercel.app-4f46e5?style=for-the-badge&logo=vercel&logoColor=white)](https://balanz-app.vercel.app)
+![Expo](https://img.shields.io/badge/Expo_SDK_57-18181b?style=flat&logo=expo&logoColor=bef264)
+![React Native](https://img.shields.io/badge/React_Native_0.86-18181b?style=flat&logo=react&logoColor=bef264)
+![TypeScript](https://img.shields.io/badge/TypeScript-18181b?style=flat&logo=typescript&logoColor=bef264)
+![Supabase](https://img.shields.io/badge/Supabase-18181b?style=flat&logo=supabase&logoColor=bef264)
+![SQLite](https://img.shields.io/badge/SQLite-18181b?style=flat&logo=sqlite&logoColor=bef264)
+![Vercel](https://img.shields.io/badge/Vercel-18181b?style=flat&logo=vercel&logoColor=bef264)
 
-![Expo](https://img.shields.io/badge/Expo_SDK_57-000020?style=flat&logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React_Native_0.86-20232A?style=flat&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
-
-Hecho por **Samuel Cleto Malle** · [Portfolio](https://samuelcletomalle.github.io) · [GitHub](https://github.com/SamuelCletoMalle)
+Hecho por **Samuel Cleto Malle** · [Portfolio](https://samuelcletomalle.github.io) · [GitHub](https://github.com/SamuelCletoMalle) · [LinkedIn](https://www.linkedin.com/in/samuelcletomalle)
 
 </div>
 
@@ -58,7 +55,8 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 | ♿ **Accesibilidad** | Tamaño de letra, alto contraste, reducir movimiento y etiquetas para lector de pantalla |
 | 🎨 **Diseño** | Logo que se dibuja al abrir, modo claro/oscuro, vibración háptica y una web adaptada a móvil y escritorio |
 
-### ⚡ Captura de pagos, en detalle
+<details>
+<summary><b>⚡ Captura de pagos, en detalle</b></summary>
 
 - **iPhone:** un Atajo recoge el pago al pagar con Apple Pay o al llegar un SMS del banco y lo manda a Balanz.
 - **Android:** MacroDroid o Tasker leen la notificación del banco y la envían igual.
@@ -68,7 +66,10 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
   siempre cae en *Pendientes*.
 - **Entiende texto libre:** `Café 3,50`, `Ingreso 20 Abuela`, `Compra de 12,50 € en MERCADONA con tu tarjeta *1234`.
 
-### 📗 Excel, en detalle
+</details>
+
+<details>
+<summary><b>📗 Excel, en detalle</b></summary>
 
 - **Exportar:** libro anual (`CONTABILIDAD_2026.xlsx`) con una hoja *Inicio* —dinero inicial, dinero actual y resumen
   mensual en verde/rojo según ganes o pierdas— y una hoja por mes con **INGRESOS a la izquierda y GASTOS a la
@@ -77,14 +78,20 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
   coge el dinero de inicio de año como dinero inicial.
 - El libro se genera a mano (XML dentro de un zip), así funciona igual en web y en móvil sin librerías pesadas.
 
-### 🖥️ Web adaptable
+</details>
+
+<details>
+<summary><b>🖥️ Web adaptable: móvil, escritorio y pantalla ancha</b></summary>
 
 - **Móvil:** pestañas abajo y una columna.
 - **Escritorio (≥ 900 px):** menú lateral y contenido centrado.
 - **Pantalla ancha (≥ 1100 px):** columnas, con el saldo y un panel de *gasto por categoría del mes* a un lado y la
   lista de movimientos al otro.
 
-## 📱 Pantallas
+</details>
+
+<details>
+<summary><b>📱 Pantallas y archivos</b></summary>
 
 | Pantalla | Archivo |
 |---|---|
@@ -100,6 +107,8 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 | Alta inicial | `src/app/bienvenida.tsx` |
 | Ajustes | `src/app/ajustes.tsx` |
 
+</details>
+
 ## 🛠️ Tecnologías
 
 | Capa | Tecnología |
@@ -112,7 +121,8 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 | Archivos | `xlsx` para leer Excel y un generador propio con `jszip` para escribirlo con formato |
 | Web | Exportación estática en Vercel, instalable como PWA, con cabeceras de seguridad |
 
-## 🏗️ Arquitectura
+<details>
+<summary><b>🏗️ Arquitectura y estructura del código</b></summary>
 
 ```
  Atajo de iOS / MacroDroid ──► Supabase (función RPC, solo AÑADE)
@@ -148,6 +158,8 @@ supabase/                 scripts SQL: tablas, políticas RLS y funciones
 **Local primero:** la app funciona contra la base local y sincroniza con la nube al abrirla, al volver a ella y
 cada 30 segundos. Cada cuenta tiene su propia base local, así que varias personas pueden compartir dispositivo sin
 mezclar datos. El dinero inicial y el límite viajan con la cuenta, así que otro dispositivo parte con los mismos datos.
+
+</details>
 
 ## 🧩 Retos técnicos
 
@@ -189,7 +201,8 @@ Las variables `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_KEY` se configu
 
 En la app, **Más → Atajos, SMS y acceso rápido** muestra la URL, la clave y tu token, con los pasos para iPhone y Android.
 
-## 🔒 Seguridad y privacidad
+<details>
+<summary><b>🔒 Seguridad y privacidad</b></summary>
 
 - Las claves no están en el repositorio: se leen de variables de entorno.
 - La clave *publishable* de Supabase es pública por diseño. La protección real son las políticas **RLS**
@@ -204,6 +217,8 @@ En la app, **Más → Atajos, SMS y acceso rápido** muestra la URL, la clave y 
 - **Limitación conocida:** la base local del dispositivo no va cifrada (el bloqueo con Face ID protege la pantalla, no el
   archivo). Cifrarla en móvil exige una compilación propia, no Expo Go.
 
+</details>
+
 ## 🗺️ Próximos pasos
 
 - [x] Versión web publicada e instalable como PWA
@@ -217,13 +232,12 @@ En la app, **Más → Atajos, SMS y acceso rápido** muestra la URL, la clave y 
 - [ ] Conexión directa con el banco (Open Banking)
 - [ ] Cuentas de familia con un presupuesto compartido
 - [ ] Escaneo de tickets con OCR y widget de pantalla de inicio
-- [ ] Cuenta de familia compartida (un hogar con presupuesto común)
 - [ ] Añadir capturas de pantalla y un vídeo de demo a este README
 
 ## 👤 Autor y licencia
 
-Hecho por **Samuel Cleto Malle**, estudiante de DAM.
-[GitHub](https://github.com/SamuelCletoMalle) · ✉️ samuelcletomalle@gmail.com
+Hecho por **Samuel Cleto Malle**, estudiante de DAM ·
+[Portfolio](https://samuelcletomalle.github.io) · [GitHub](https://github.com/SamuelCletoMalle) · [LinkedIn](https://www.linkedin.com/in/samuelcletomalle)
 
 Código publicado para verlo y evaluarlo. **Todos los derechos reservados** © 2026 Samuel: no se permite copiarlo,
 reutilizarlo ni redistribuirlo sin permiso. Ver [LICENSE](LICENSE).

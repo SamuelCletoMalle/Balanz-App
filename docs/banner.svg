@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" width="960" height="300" role="img" aria-labelledby="t d">
+  <title id="t">Balanz — Tu dinero, en equilibrio</title>
+  <desc id="d">Logo de Balanz dibujándose: una Z lima con una moneda blanca en el centro, junto al nombre y el lema de la app.</desc>
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141416"/>
+      <stop offset="1" stop-color="#09090b"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.2" cy="0.5" r="0.45">
+      <stop offset="0" stop-color="#bef264" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#bef264" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="icono" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#18181b"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <linearGradient id="marca" x1="0" x2="1">
+      <stop offset="0" stop-color="#d9f99d"/>
+      <stop offset="1" stop-color="#bef264"/>
+    </linearGradient>
+    <pattern id="rejilla" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#27272a" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <style>
+    text { font-family: "Manrope", "Inter", "Segoe UI", system-ui, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .t1 { stroke-dasharray: 47 47; stroke-dashoffset: 47; animation: trazo1 6s cubic-bezier(.23,1,.32,1) infinite; }
+    .t2 { stroke-dasharray: 63 63; stroke-dashoffset: 63; animation: trazo2 6s cubic-bezier(.23,1,.32,1) infinite; }
+    .t3 { stroke-dasharray: 47 47; stroke-dashoffset: 47; animation: trazo3 6s cubic-bezier(.23,1,.32,1) infinite; }
+    .moneda { transform-origin: 50px 50px; transform: scale(0); animation: moneda 6s cubic-bezier(.23,1,.32,1) infinite; }
+    @keyframes trazo1 { 0% { stroke-dashoffset: 47; } 12%, 88% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 47; } }
+    @keyframes trazo2 { 0%, 8% { stroke-dashoffset: 63; } 22%, 88% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 63; } }
+    @keyframes trazo3 { 0%, 18% { stroke-dashoffset: 47; } 30%, 88% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 47; } }
+    @keyframes moneda { 0%, 26% { transform: scale(0); } 36% { transform: scale(1.15); } 42%, 88% { transform: scale(1); } 100% { transform: scale(0); } }
+    .entra { opacity: 0; animation: entra 6s ease-out infinite; }
+    .e2 { animation-delay: .25s; } .e3 { animation-delay: .5s; } .e4 { animation-delay: .75s; }
+    @keyframes entra { 0%, 20% { opacity: 0; transform: translateY(8px); } 34%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+    .pulso { animation: pulso 1.8s ease-in-out infinite; }
+    @keyframes pulso { 50% { opacity: .3; } }
+  </style>
+
+  <rect width="960" height="300" rx="24" fill="url(#fondo)"/>
+  <rect width="960" height="300" rx="24" fill="url(#rejilla)" opacity=".5"/>
+  <rect width="960" height="300" rx="24" fill="url(#halo)"/>
+  <rect x="1" y="1" width="958" height="298" rx="23" fill="none" stroke="#27272a" stroke-width="2"/>
+
+  <!-- icono: misma geometría que src/logo.ts (rejilla 100x100) -->
+  <g transform="translate(70 60) scale(1.8)">
+    <rect width="100" height="100" rx="24" fill="url(#icono)" stroke="#27272a" stroke-width=".6"/>
+    <g fill="none" stroke="#bef264" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path class="t1" d="M27 29 H73"/>
+      <path class="t2" d="M73 29 L27 71"/>
+      <path class="t3" d="M27 71 H73"/>
+    </g>
+    <g class="moneda">
+      <circle cx="50" cy="50" r="11.5" fill="#0a0a0a"/>
+      <circle cx="50" cy="50" r="8" fill="#ffffff"/>
+    </g>
+  </g>
+
+  <g class="entra">
+    <text x="300" y="132" fill="#fafafa" font-size="64" font-weight="800" letter-spacing="-2">Balanz</text>
+  </g>
+  <g class="entra e2">
+    <text x="302" y="172" fill="url(#marca)" font-size="24" font-weight="700">Tu dinero, en equilibrio.</text>
+  </g>
+  <g class="entra e3">
+    <text x="302" y="206" fill="#a1a1aa" font-size="17">Control de gastos e ingresos para móvil y web</text>
+  </g>
+  <g class="entra e4 mono" font-size="14">
+    <rect x="300" y="226" width="118" height="30" rx="15" fill="#1e1e22" stroke="#3f3f46"/>
+    <text x="318" y="246" fill="#d9f99d">React Native</text>
+    <rect x="428" y="226" width="64" height="30" rx="15" fill="#1e1e22" stroke="#3f3f46"/>
+    <text x="446" y="246" fill="#d9f99d">Expo</text>
+    <rect x="502" y="226" width="100" height="30" rx="15" fill="#1e1e22" stroke="#3f3f46"/>
+    <text x="520" y="246" fill="#d9f99d">Supabase</text>
+    <rect x="612" y="226" width="82" height="30" rx="15" fill="#1e1e22" stroke="#3f3f46"/>
+    <text x="630" y="246" fill="#d9f99d">SQLite</text>
+  </g>
+
+  <!-- estado -->
+  <g class="mono" font-size="13">
+    <rect x="770" y="30" width="160" height="30" rx="15" fill="#1e1e22" stroke="#3f3f46"/>
+    <circle class="pulso" cx="790" cy="45" r="5" fill="#bef264"/>
+    <text x="804" y="50" fill="#fafafa">v3 · en desarrollo</text>
+  </g>
+</svg>
