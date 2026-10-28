@@ -263,7 +263,7 @@ export default function RootLayout() {
             escritorio
               ? ({ children }) => (
                   <View style={{ flex: 1, alignItems: 'center', backgroundColor: tema.fondo }}>
-                    <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 1240 : 880 }}>{children}</View>
+                    <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 1360 : 880 }}>{children}</View>
                   </View>
                 )
               : undefined

@@ -9,10 +9,6 @@ import { Text } from './Texto';
 import { Tarjeta } from './ui';
 import { formatoEuro, infoCategoria, tintaCategoria, useTema } from '../tema';
 
-const TAM = 150;
-const R = 58;
-const GROSOR = 22;
-const LONGITUD = 2 * Math.PI * R;
 const HUECO = 2; // separación entre porciones, en unidades del círculo
 
 /** 0,237 → "24 %" (y "<1 %" si es muy pequeño). */
@@ -23,8 +19,22 @@ export function formatoPorcentaje(parte: number): string {
 }
 
 /** Reparto del gasto por categoría: un donut con el total en el centro y debajo cada categoría con su porcentaje. */
-export default function DonutCategorias({ filas, titulo = 'Gasto por categoría' }: { filas: { categoria: string; total: number }[]; titulo?: string }) {
+export default function DonutCategorias({
+  filas,
+  titulo = 'Gasto por categoría',
+  horizontal = false,
+}: {
+  filas: { categoria: string; total: number }[];
+  titulo?: string;
+  /** Donut a la izquierda y la leyenda (solo nombre y porcentaje) a la derecha: para el panel de ordenador. */
+  horizontal?: boolean;
+}) {
   const tema = useTema();
+  // En el panel de ordenador el donut es más pequeño para dejar sitio a la leyenda.
+  const TAM = horizontal ? 124 : 150;
+  const R = Math.round(TAM * 0.386);
+  const GROSOR = horizontal ? 18 : 22;
+  const LONGITUD = 2 * Math.PI * R;
   const orden = [...filas].filter((f) => f.total > 0).sort((a, b) => b.total - a.total);
   const total = orden.reduce((s, f) => s + f.total, 0);
 
@@ -42,8 +52,8 @@ export default function DonutCategorias({ filas, titulo = 'Gasto por categoría'
       {orden.length === 0 ? (
         <Text style={{ color: tema.textoSuave, fontSize: 13 }}>Cuando añadas gastos en este mes, verás aquí cómo se reparte tu dinero.</Text>
       ) : (
-        <>
-          <View style={{ alignItems: 'center', justifyContent: 'center', height: TAM }} accessible accessibilityLabel={`Gastado ${formatoEuro(total)}`}>
+        <View style={horizontal ? { flexDirection: 'row', alignItems: 'center', gap: 18 } : { gap: 14 }}>
+          <View style={{ alignItems: 'center', justifyContent: 'center', width: TAM, height: TAM, alignSelf: 'center' }} accessible accessibilityLabel={`Gastado ${formatoEuro(total)}`}>
             <Svg width={TAM} height={TAM} viewBox={`0 0 ${TAM} ${TAM}`}>
               <G transform={`rotate(-90 ${TAM / 2} ${TAM / 2})`}>
                 <Circle cx={TAM / 2} cy={TAM / 2} r={R} stroke={tema.tarjetaSuave} strokeWidth={GROSOR} fill="none" />
@@ -71,20 +81,22 @@ export default function DonutCategorias({ filas, titulo = 'Gasto por categoría'
             </View>
           </View>
 
-          <View style={{ gap: 10 }}>
+          <View style={[{ gap: horizontal ? 7 : 10 }, horizontal ? { flex: 1 } : null]}>
             {trozos.map((t) => (
-              <View key={t.categoria} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View key={t.categoria} style={{ flexDirection: 'row', alignItems: 'center', gap: horizontal ? 8 : 10 }}>
                 <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: tintaCategoria(t.cat.color, tema.oscuro) }} />
-                <Ionicons name={t.cat.icono} size={16} color={tintaCategoria(t.cat.color, tema.oscuro)} />
-                <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                {horizontal ? null : <Ionicons name={t.cat.icono} size={16} color={tintaCategoria(t.cat.color, tema.oscuro)} />}
+                <Text style={{ color: tema.texto, fontSize: horizontal ? 13 : 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
                   {t.categoria}
                 </Text>
                 <Text style={{ color: tema.textoSuave, fontSize: 13, fontVariant: ['tabular-nums'] }}>{formatoPorcentaje(t.parte)}</Text>
-                <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '700', minWidth: 84, textAlign: 'right', fontVariant: ['tabular-nums'] }}>{formatoEuro(t.total)}</Text>
+                {horizontal ? null : (
+                  <Text style={{ color: tema.texto, fontSize: 14, fontWeight: '700', minWidth: 84, textAlign: 'right', fontVariant: ['tabular-nums'] }}>{formatoEuro(t.total)}</Text>
+                )}
               </View>
             ))}
           </View>
-        </>
+        </View>
       )}
     </Tarjeta>
   );

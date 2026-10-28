@@ -12,6 +12,7 @@ import { LOGO_CABECERA } from '../components/Intro';
 import TarjetaSaldo from '../components/TarjetaSaldo';
 import GastoPorCategoria from '../components/GastoPorCategoria';
 import BotonNuevo from '../components/BotonNuevo';
+import PanelEscritorio from '../components/PanelEscritorio';
 import CampanaPendientes from '../components/CampanaPendientes';
 import Presionable from '../components/Presionable';
 import { Boton, Escalonado, Tarjeta } from '../components/ui';
@@ -188,7 +189,7 @@ export default function InicioScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: tema.fondo }]}>
-      <Text style={[styles.titulo, { color: tema.texto }]}>Inicio</Text>
+      {amplio ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Inicio</Text>}
       {escritorio ? null : (
         <View pointerEvents="none" style={[styles.logoCabecera, { opacity: introLista ? 1 : 0 }]}>
           <Logo size={LOGO_CABECERA.tamano} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
@@ -196,18 +197,7 @@ export default function InicioScreen() {
       )}
 
       {amplio ? (
-        <View style={{ flex: 1, flexDirection: 'row', gap: 28 }}>
-          <ScrollView style={{ width: 400, flexGrow: 0 }} contentContainerStyle={{ gap: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-            <Boton texto="Añadir movimiento" icono="add" onPress={() => abrirNuevoMovimiento('gasto')} />
-            {saldoTarjeta}
-            <GastoPorCategoria filas={categorias} />
-          </ScrollView>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-            {avisoPendientes}
-            {listaUltimos}
-            {tarjetaCobro}
-          </ScrollView>
-        </View>
+        <PanelEscritorio tarjetaSaldo={saldoTarjeta} avisoPendientes={avisoPendientes} tarjetaCobro={tarjetaCobro} totalMes={totalMes} ingresosMes={ingresosMes} categorias={categorias} />
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           <Escalonado>
