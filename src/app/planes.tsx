@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState } from 'react';
@@ -31,7 +31,7 @@ export default function PlanesScreen() {
   const vista: Vista = elegida && elegida.para === pedida ? elegida.v : deLaRuta;
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       <Text style={[styles.titulo, { color: tema.texto }]}>Planes</Text>
       <Segmentos<Vista>
         opciones={[

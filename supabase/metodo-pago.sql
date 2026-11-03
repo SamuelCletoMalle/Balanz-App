@@ -1,4 +1,4 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
 -- Método de pago y nota en cada movimiento (tarjeta, efectivo, Bizum… y un texto libre).
 -- Pégalo en Supabase > SQL Editor > Run. Se puede ejecutar varias veces.

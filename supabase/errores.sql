@@ -1,6 +1,6 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
--- Balanz: avisos de errores de la app. Quien usa la app solo puede AÑADIR avisos; para leerlos, entra al panel de Supabase.
+-- Nexo Pay: avisos de errores de la app. Quien usa la app solo puede AÑADIR avisos; para leerlos, entra al panel de Supabase.
 -- Pégalo en Supabase > SQL Editor > Run. Se puede ejecutar varias veces.
 
 create table if not exists public.errores (

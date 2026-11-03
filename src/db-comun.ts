@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 // Tipos y utilidades que comparten la base nativa (SQLite, db.ts) y la de web (db.web.ts).

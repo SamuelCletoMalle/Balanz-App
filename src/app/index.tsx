@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useState } from 'react';
@@ -188,7 +188,7 @@ export default function InicioScreen() {
   const saldoTarjeta = <TarjetaSaldo saldo={saldo} cuentas={cuentas} totalMes={totalMes} ingresosMes={ingresosMes} limite={limite} sincronizando={sincronizando} />;
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       {amplio ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Inicio</Text>}
       {escritorio ? null : (
         <View pointerEvents="none" style={[styles.logoCabecera, { opacity: introLista ? 1 : 0 }]}>

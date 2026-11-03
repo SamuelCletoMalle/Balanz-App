@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useState } from 'react';
@@ -148,7 +148,7 @@ export default function AtajosScreen() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: tema.fondo }}
+      style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
@@ -159,7 +159,7 @@ export default function AtajosScreen() {
       </TouchableOpacity>
       <Text style={[styles.titulo, { color: tema.texto }]}>Captura automática</Text>
       <Text style={{ color: tema.textoSuave, fontSize: 15, lineHeight: 22 }}>
-        Haz que Balanz apunte tus pagos <Text style={styles.b}>sin que tengas que escribirlos</Text>. Hay tres formas, y no hace falta usar todas:
+        Haz que Nexo Pay apunte tus pagos <Text style={styles.b}>sin que tengas que escribirlos</Text>. Hay tres formas, y no hace falta usar todas:
       </Text>
 
       <View style={[styles.tarjeta, { backgroundColor: tema.tarjeta }]}>
@@ -219,7 +219,7 @@ export default function AtajosScreen() {
             </View>
             <Text style={{ color: tema.textoSuave, fontSize: 12, lineHeight: 18 }}>
               {directo
-                ? 'El gasto entra directo en tus movimientos y lo verás al abrir la app. Si Balanz no entiende el importe, lo deja en Pendientes para que lo revises.'
+                ? 'El gasto entra directo en tus movimientos y lo verás al abrir la app. Si Nexo Pay no entiende el importe, lo deja en Pendientes para que lo revises.'
                 : 'Cada pago espera en Pendientes y lo aceptas con un toque, por si hay que corregir algo. Es lo más seguro para empezar.'}
             </Text>
             <Copiable tema={tema} etiqueta="1 · URL (cambia según lo que has elegido)" valor={url} />
@@ -250,7 +250,7 @@ export default function AtajosScreen() {
                 tema={tema}
                 icono="card-outline"
                 titulo="Pagos con la tarjeta del móvil (iPhone)"
-                queHace="Cada vez que pagues con Apple Pay, el comercio y el importe se mandan solos a Balanz. No tienes que acordarte de apuntar nada."
+                queHace="Cada vez que pagues con Apple Pay, el comercio y el importe se mandan solos a Nexo Pay. No tienes que acordarte de apuntar nada."
                 tiempo="Se prepara una sola vez · unos 10 minutos"
               />
               <Text style={[styles.seccion, { color: tema.textoSuave }]}>A · CREAR LA AUTOMATIZACIÓN</Text>
@@ -272,20 +272,20 @@ export default function AtajosScreen() {
                 Pulsa <Text style={styles.b}>Hecho</Text>. No uses el botón ▶ de prueba: sin un pago real no hay comercio ni importe y da error. Para probarlo, paga algo de verdad con el móvil.
               </Paso>
               <Consejo tema={tema}>
-                Apple a veces tarda en avisar de la transacción y, en algunos bancos, el atajo no llega a ejecutarse (es un fallo conocido de iOS, no de Balanz). Si un pago no aparece, revisa Pendientes: los que llegan se guardan allí o en movimientos.
+                Apple a veces tarda en avisar de la transacción y, en algunos bancos, el atajo no llega a ejecutarse (es un fallo conocido de iOS, no de Nexo Pay). Si un pago no aparece, revisa Pendientes: los que llegan se guardan allí o en movimientos.
               </Consejo>
               <Text style={[styles.seccion, { color: tema.textoSuave }]}>C · QUE TE AVISE (OPCIONAL)</Text>
               <Paso tema={tema} n={1}>
                 Debajo de la acción de enviar, pulsa <Text style={styles.b}>Añadir acción</Text> y busca <Text style={styles.b}>Mostrar notificación</Text>.
               </Paso>
               <Paso tema={tema} n={2}>
-                Toca el texto azul de la acción: es el cuerpo del aviso y puedes escribir lo que quieras, como <Text style={styles.b}>Pago apuntado en Balanz:</Text>. Después, sin borrar nada, toca el campo y elige la variable <Text style={styles.b}>Contenido de URL</Text> (es la respuesta de Balanz). Verás algo como “Pago apuntado en Balanz: Gasto 12.50 € · Mercadona”.
+                Toca el texto azul de la acción: es el cuerpo del aviso y puedes escribir lo que quieras, como <Text style={styles.b}>Pago apuntado en Nexo Pay:</Text>. Después, sin borrar nada, toca el campo y elige la variable <Text style={styles.b}>Contenido de URL</Text> (es la respuesta de Nexo Pay). Verás algo como “Pago apuntado en Nexo Pay: Gasto 12.50 € · Mercadona”.
               </Paso>
               <Paso tema={tema} n={3}>
-                Para cambiar el título, pulsa la flecha pequeña <Text style={styles.b}>›</Text> de la acción y escribe el que quieras, por ejemplo <Text style={styles.b}>Balanz</Text>.
+                Para cambiar el título, pulsa la flecha pequeña <Text style={styles.b}>›</Text> de la acción y escribe el que quieras, por ejemplo <Text style={styles.b}>Nexo Pay</Text>.
               </Paso>
               <Consejo tema={tema}>
-                La variable <Text style={styles.b}>Contenido de URL</Text> solo trae el gasto con “Que se apunte solo”. Con “Lo confirmo yo” Balanz no devuelve nada, así que escribe tú el texto, por ejemplo “Pago enviado a Balanz, confírmalo en Pendientes”, y no añadas la variable.
+                La variable <Text style={styles.b}>Contenido de URL</Text> solo trae el gasto con “Que se apunte solo”. Con “Lo confirmo yo” Nexo Pay no devuelve nada, así que escribe tú el texto, por ejemplo “Pago enviado a Nexo Pay, confírmalo en Pendientes”, y no añadas la variable.
               </Consejo>
             </View>
           ) : null}
@@ -307,7 +307,7 @@ export default function AtajosScreen() {
               Toca el valor de <Text style={styles.b}>p_texto</Text> (déjalo vacío) y, en la barra que aparece sobre el teclado, elige <Text style={styles.b}>Preguntar cada vez</Text>. Así el atajo te pedirá el texto cada vez que lo uses.
             </Paso>
             <Paso tema={tema} n={7}>
-              Pulsa <Text style={styles.b}>Hecho</Text>. Pruébalo una vez desde la app Atajos: escribe <Text style={styles.b}>Café 3,50</Text> y mira que aparezca en Balanz.
+              Pulsa <Text style={styles.b}>Hecho</Text>. Pruébalo una vez desde la app Atajos: escribe <Text style={styles.b}>Café 3,50</Text> y mira que aparezca en Nexo Pay.
             </Paso>
 
             <Text style={[styles.seccion, { color: tema.textoSuave }]}>B · PONERLO EN EL PANEL DE CONTROL</Text>
@@ -342,7 +342,7 @@ export default function AtajosScreen() {
                 tema={tema}
                 icono="chatbubble-ellipses-outline"
                 titulo="SMS del banco (iPhone)"
-                queHace="Si tu banco te manda un SMS cada vez que pagas o recibes dinero, Balanz lo lee y lo apunta."
+                queHace="Si tu banco te manda un SMS cada vez que pagas o recibes dinero, Nexo Pay lo lee y lo apunta."
               />
               <Paso tema={tema} n={1}>
                 En <Text style={styles.b}>Atajos</Text> → <Text style={styles.b}>Automatización</Text> → <Text style={styles.b}>+</Text> → <Text style={styles.b}>Mensaje</Text>.
@@ -352,7 +352,7 @@ export default function AtajosScreen() {
               </Paso>
               {pasosEnvio}
               <Paso tema={tema} n={6}>
-                En el valor de <Text style={styles.b}>p_texto</Text> elige la variable <Text style={styles.b}>Entrada del atajo</Text> (el texto del mensaje). Balanz saca solo el importe y el comercio.
+                En el valor de <Text style={styles.b}>p_texto</Text> elige la variable <Text style={styles.b}>Entrada del atajo</Text> (el texto del mensaje). Nexo Pay saca solo el importe y el comercio.
               </Paso>
             </View>
           ) : null}
@@ -388,7 +388,7 @@ export default function AtajosScreen() {
               queHace="Los atajos no avisan cuando algo falla, así que revisa esto:"
             />
             <Paso tema={tema} n={1}>
-              <Text style={styles.b}>No llega nada.</Text> Abre Balanz y entra en Pendientes: los avisos se recogen al abrir la app.
+              <Text style={styles.b}>No llega nada.</Text> Abre Nexo Pay y entra en Pendientes: los avisos se recogen al abrir la app.
             </Paso>
             <Paso tema={tema} n={2}>
               <Text style={styles.b}>Ver qué responde el servidor.</Text> Al final del atajo añade la acción <Text style={styles.b}>Mostrar resultado</Text> con el <Text style={styles.b}>Contenido de URL</Text>. Si dice “token invalido”, el código está mal copiado; si dice “Invalid API key”, falla la clave.
@@ -397,7 +397,7 @@ export default function AtajosScreen() {
               <Text style={styles.b}>Copiar mal es lo más típico.</Text> Vuelve a copiar la URL, la clave y el código con los botones de arriba, sin espacios al principio ni al final.
             </Paso>
             <Paso tema={tema} n={4}>
-              Usa <Text style={styles.b}>Enviar un pago de prueba</Text>: si ese llega a Pendientes, el fallo está en el atajo y no en Balanz.
+              Usa <Text style={styles.b}>Enviar un pago de prueba</Text>: si ese llega a Pendientes, el fallo está en el atajo y no en Nexo Pay.
             </Paso>
           </View>
 

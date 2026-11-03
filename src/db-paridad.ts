@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 // Comprobación solo de tipos: la base de web (db.web.ts) debe exponer lo mismo que la nativa (db.ts).

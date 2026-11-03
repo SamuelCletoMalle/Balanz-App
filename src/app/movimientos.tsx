@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback, useMemo, useRef, ReactNode } from 'react';
@@ -350,7 +350,7 @@ export default function GastosScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       <View style={styles.cabeceraPantalla}>
         <Text style={[styles.titulo, { color: tema.texto }]}>Movimientos</Text>
         {amplio ? <Boton texto="Añadir movimiento" icono="add" onPress={() => abrirNuevoMovimiento('gasto')} contenedor={{ width: 230 }} /> : null}

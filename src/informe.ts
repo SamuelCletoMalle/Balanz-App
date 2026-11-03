@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { Platform } from 'react-native';
@@ -97,7 +97,7 @@ export function htmlInforme(d: DatosInforme): string {
     .pie{margin-top:28px;color:#94a3b8;font-size:11px}
   </style></head><body>
     <h1>Informe de ${esc(nombreMes(d.mes))}</h1>
-    <div class="sub">Balanz · generado el ${new Date().toLocaleDateString('es-ES')}</div>
+    <div class="sub">Nexo Pay · generado el ${new Date().toLocaleDateString('es-ES')}</div>
     <div class="kpis">
       <div class="kpi">Gastos<b class="rojo">${formatoEuro(d.gastos)}</b><small>${variacionTexto(d.gastos, d.gastosPrevios)} vs. mes anterior</small></div>
       <div class="kpi">Ingresos<b class="verde">${formatoEuro(d.ingresos)}</b><small>${variacionTexto(d.ingresos, d.ingresosPrevios)} vs. mes anterior</small></div>
@@ -108,7 +108,7 @@ export function htmlInforme(d: DatosInforme): string {
     <table><tr><th>Categoría</th><th class="n">Este mes</th><th class="n">Mes anterior</th><th class="n">Cambio</th></tr>${filas || '<tr><td colspan="4">Sin gastos</td></tr>'}</table>
     <h2>Mayores gastos</h2>
     <table><tr><th>Concepto</th><th>Fecha</th><th class="n">Importe</th></tr>${mayores || '<tr><td colspan="3">Sin gastos</td></tr>'}</table>
-    <div class="pie">Informe generado con Balanz.</div>
+    <div class="pie">Informe generado con Nexo Pay.</div>
   </body></html>`;
 }
 

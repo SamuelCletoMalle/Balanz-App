@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { test } from 'node:test';
@@ -26,7 +26,7 @@ test('extracto con columnas Cargo y Abono', () => {
   assert.deepEqual(f.map((x) => [x.tipo, x.importe]), [['gasto', 45.2], ['ingreso', 20]]);
 });
 
-test('tabla plana de Balanz (con columna Tipo y todo en positivo)', () => {
+test('tabla plana de Nexo Pay (con columna Tipo y todo en positivo)', () => {
   const csv = 'Descripcion,Categoria,Importe,Tipo,Fecha\nCafé,Alimentación,3.5,Gasto,2026-03-05\nAbuela,Otros,20,Ingreso,2026-03-06\n';
   const f = filasPlanas(hojaDeCsv(csv));
   assert.deepEqual(f.map((x) => [x.tipo, x.importe, x.categoria]), [['gasto', 3.5, 'Alimentación'], ['ingreso', 20, 'Otros']]);

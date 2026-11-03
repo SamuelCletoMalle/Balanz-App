@@ -1,12 +1,12 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 /** Resplandor suave (degradado radial) para dar profundidad detrás del logo. */
-export default function Halo({ size = 520, color = '#bef264', intensidad = 0.5 }: { size?: number; color?: string; intensidad?: number }) {
+export default function Halo({ size = 520, color = '#4452FF', intensidad = 0.5 }: { size?: number; color?: string; intensidad?: number }) {
   return (
     <View pointerEvents="none" style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 100 100">

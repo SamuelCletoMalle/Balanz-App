@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState } from 'react';
@@ -98,20 +98,20 @@ export default function LoginScreen() {
   };
 
   const subtitulo =
-    modo === 'registro' ? 'Crea tu cuenta para guardar tus gastos.' : modo === 'recuperar' ? 'Te enviamos un enlace para elegir una contraseña nueva.' : 'Tu dinero, en equilibrio.';
+    modo === 'registro' ? 'Crea tu cuenta para guardar tus gastos.' : modo === 'recuperar' ? 'Te enviamos un enlace para elegir una contraseña nueva.' : 'Tu dinero, conectado.';
   const textoBoton = modo === 'registro' ? 'Registrarse' : modo === 'recuperar' ? 'Enviar enlace' : 'Iniciar sesión';
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: tema.fondo }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View pointerEvents="none" style={styles.halo}>
-        <Halo size={620} color="#bef264" intensidad={tema.oscuro ? 0.16 : 0.32} />
+        <Halo size={620} color="#4452FF" intensidad={tema.oscuro ? 0.16 : 0.32} />
       </View>
       <View style={styles.columna}>
         <Animated.View entering={entra(0)} style={styles.logo}>
           <Logo size={88} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
         </Animated.View>
         <Animated.View entering={entra(1)}>
-          <Text style={[styles.marca, { color: tema.texto }]}>Balanz</Text>
+          <Text style={[styles.marca, { color: tema.texto }]}>Nexo Pay</Text>
           <Text style={[styles.subtitulo, { color: tema.textoSuave }]}>{subtitulo}</Text>
         </Animated.View>
 

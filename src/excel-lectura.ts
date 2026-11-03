@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import * as XLSX from 'xlsx';
@@ -111,7 +111,7 @@ const COLUMNAS = {
 };
 
 /**
- * Hoja plana: una fila por movimiento. Vale tanto para lo que exporta Balanz como para un extracto del banco
+ * Hoja plana: una fila por movimiento. Vale tanto para lo que exporta Nexo Pay como para un extracto del banco
  * (importe con signo, o columnas Cargo / Abono). En un extracto, lo negativo es gasto y lo positivo ingreso.
  */
 export function filasPlanas(hoja: XLSX.WorkSheet): Fila[] {

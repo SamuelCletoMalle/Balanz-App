@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Halo from './Halo';
 import { Text } from './Texto';
 import { Barra, useContador } from './ui';
 import { cambiarPreferencias, usePreferencias } from '../accesibilidad';
@@ -49,11 +50,10 @@ export default function TarjetaSaldo({ saldo, cuentas, totalMes, ingresosMes, li
   const { reducirMovimiento, ocultarImportes } = usePreferencias();
   const porcentaje = limite > 0 ? Math.min(totalMes / limite, 1) : 0;
   const tinta = tema.marcaTexto;
-  const heroClaro = tinta !== '#ffffff';
-  const puntoHero = heroClaro ? 'rgba(10,10,10,0.10)' : 'rgba(255,255,255,0.2)';
-  const barraHero = heroClaro ? 'rgba(10,10,10,0.14)' : 'rgba(255,255,255,0.25)';
-  // Sobre la lima los colores de estado necesitan ser más oscuros que en el resto de la app.
-  const colorBarra = limite > 0 && totalMes > limite ? '#b91c1c' : porcentaje > 0.8 ? '#b45309' : '#166534';
+  // La tarjeta es de metal oscuro en claro y en oscuro: la tinta es clara y los colores de estado, los vivos.
+  const puntoHero = 'rgba(255,255,255,0.09)';
+  const barraHero = 'rgba(255,255,255,0.14)';
+  const colorBarra = limite > 0 && totalMes > limite ? '#fb7185' : porcentaje > 0.8 ? '#fbbf24' : '#4ade80';
 
   const [indice, setIndice] = useState(() => {
     const guardado = ORDEN.findIndex((c) => c.id === getConfig('saldo_cuenta'));
@@ -117,7 +117,10 @@ export default function TarjetaSaldo({ saldo, cuentas, totalMes, ingresosMes, li
   return (
     <Animated.View entering={reducirMovimiento ? undefined : FadeInDown.duration(380).easing(SALIDA)}>
       <LinearGradient colors={tema.marca} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-        <View pointerEvents="none" style={styles.brillo} />
+        <View pointerEvents="none" style={styles.brillo}>
+          <Halo size={340} color="#4452ff" intensidad={0.6} />
+        </View>
+        <View pointerEvents="none" style={styles.filo} />
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={ocultarImportes ? 'Mostrar los importes' : 'Ocultar los importes'}
@@ -212,8 +215,9 @@ export default function TarjetaSaldo({ saldo, cuentas, totalMes, ingresosMes, li
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: 28, padding: 22, gap: 14, overflow: 'hidden' },
-  brillo: { position: 'absolute', top: -70, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.10)' },
+  hero: { borderRadius: 28, padding: 22, gap: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', boxShadow: '0 14px 40px rgba(68,82,255,0.22)' },
+  brillo: { position: 'absolute', top: -130, right: -100 },
+  filo: { position: 'absolute', top: 0, left: 20, right: 20, height: 1, backgroundColor: 'rgba(255,255,255,0.35)' },
   ojo: { position: 'absolute', top: 16, right: 16, zIndex: 2, padding: 4 },
   etiquetaFila: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 36 },
   etiqueta: { fontSize: 13, fontWeight: '600', opacity: 0.85, letterSpacing: 0.2 },

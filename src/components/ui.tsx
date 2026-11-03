@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { Children, ReactNode, useEffect, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Presionable from './Presionable';
 import { Text } from './Texto';
 import { usePreferencias } from '../accesibilidad';
@@ -24,6 +25,7 @@ import { toque } from '../haptics';
 import { IconoNombre, RADIO, SOMBRA, useTema } from '../tema';
 import { CURVAS } from '../logo';
 import { useDisposicion } from '../layout';
+import { cristal, esContraste } from './cristal';
 
 const SALIDA = Easing.bezier(...CURVAS.salida);
 
@@ -38,8 +40,19 @@ export function useQuieto(): boolean {
 export function Tarjeta({ children, style, nivel = 1 }: { children: ReactNode; style?: StyleProp<ViewStyle>; nivel?: 1 | 2 | 3 }) {
   const tema = useTema();
   const fondo = nivel === 1 ? tema.tarjeta : nivel === 2 ? tema.tarjetaSuave : tema.elevada;
+  if (esContraste(tema.borde)) {
+    return <View style={[styles.tarjeta, { backgroundColor: fondo, borderColor: tema.borde }, style]}>{children}</View>;
+  }
+  // Cristal: translúcida sobre el fondo ambiental, con borde de luz y un reflejo suave en la parte de arriba.
   return (
-    <View style={[styles.tarjeta, { backgroundColor: fondo, borderColor: tema.borde }, !tema.oscuro && nivel === 1 ? SOMBRA.s : null, style]}>
+    <View style={[styles.tarjeta, styles.cristal, cristal(tema.oscuro, nivel), style]}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={tema.oscuro ? ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0)'] : ['rgba(255,255,255,0.7)', 'rgba(255,255,255,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.7, y: 1 }}
+        style={styles.reflejo}
+      />
       {children}
     </View>
   );
@@ -73,7 +86,7 @@ export function Boton({
   const tema = useTema();
   const quieto = useQuieto();
   const colores = {
-    primario: { fondo: tema.primario, texto: tema.primarioTexto, borde: 'transparent' },
+    primario: { fondo: 'transparent', texto: '#ffffff', borde: 'transparent' },
     secundario: { fondo: tema.tarjetaSuave, texto: tema.texto, borde: tema.borde },
     fantasma: { fondo: 'transparent', texto: tema.texto, borde: 'transparent' },
     peligro: { fondo: tema.peligro, texto: '#ffffff', borde: 'transparent' },
@@ -89,8 +102,11 @@ export function Boton({
         toque();
         onPress();
       }}
-      style={[styles.boton, { backgroundColor: colores.fondo, borderColor: colores.borde, opacity: deshabilitado ? 0.45 : 1 }]}
+      style={[styles.boton, variante === 'primario' ? styles.botonAzul : null, { backgroundColor: colores.fondo, borderColor: colores.borde, opacity: deshabilitado ? 0.45 : 1 }]}
     >
+      {variante === 'primario' ? (
+        <LinearGradient pointerEvents="none" colors={['#5a67ff', '#3340f0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      ) : null}
       {cargando ? (
         <ActivityIndicator color={colores.texto} />
       ) : exito ? (
@@ -351,6 +367,9 @@ const styles = StyleSheet.create({
   disolver: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 },
   tarjeta: { borderRadius: RADIO.tarjeta, borderWidth: StyleSheet.hairlineWidth, padding: 18, gap: 14 },
   boton: { minHeight: 52, borderRadius: RADIO.boton, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
+  botonAzul: { overflow: 'hidden', borderWidth: 0, boxShadow: '0 8px 22px rgba(68,82,255,0.32)' },
+  cristal: { borderWidth: 1, overflow: 'hidden' },
+  reflejo: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIO.chip, borderWidth: 1 },
   pista: { width: 52, height: 32, borderRadius: 16, borderWidth: 1, padding: 3, justifyContent: 'center' },
   pulgar: { width: 24, height: 24, borderRadius: 12 },

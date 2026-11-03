@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { arriba } from '../layout';
@@ -50,7 +50,7 @@ export default function InformeScreen() {
   const balance = datos ? datos.ingresos - datos.gastos : 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
         <Ionicons name="chevron-back" size={22} color={tema.primario} />
         <Text style={{ color: tema.primario, fontSize: 16, fontWeight: '600' }}>Atrás</Text>

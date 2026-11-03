@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -21,7 +21,7 @@ export async function biometriaDisponible(): Promise<boolean> {
   }
 }
 
-export async function autenticar(motivo = 'Desbloquear Balanz'): Promise<boolean> {
+export async function autenticar(motivo = 'Desbloquear Nexo Pay'): Promise<boolean> {
   try {
     const r = await LocalAuthentication.authenticateAsync({
       promptMessage: motivo,

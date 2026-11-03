@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState, useCallback } from 'react';
@@ -20,7 +20,7 @@ export function ReglasContenido({ embebido = false }: { embebido?: boolean }) {
   useFocusEffect(recargar);
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
       {embebido ? null : (
         <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
           <Ionicons name="chevron-back" size={22} color={tema.primario} />
@@ -29,7 +29,7 @@ export function ReglasContenido({ embebido = false }: { embebido?: boolean }) {
       )}
       {embebido ? null : <Text style={[styles.titulo, { color: tema.texto }]}>Categorías aprendidas</Text>}
       <Text style={{ color: tema.textoSuave, fontSize: 13, marginBottom: 10 }}>
-        Balanz recuerda la categoría que eliges para cada comercio y la aplica solo la próxima vez.
+        Nexo Pay recuerda la categoría que eliges para cada comercio y la aplica solo la próxima vez.
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>

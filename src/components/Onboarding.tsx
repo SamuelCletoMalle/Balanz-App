@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useState } from 'react';
@@ -195,7 +195,7 @@ export default function Onboarding({ onTerminar, soloVista = false }: { onTermin
             <View style={{ gap: 20 }}>
               <Logo size={84} />
               <View style={{ gap: 8 }}>
-                <Text style={[estilos.titulo, { color: tema.texto }]}>Bienvenido a Balanz</Text>
+                <Text style={[estilos.titulo, { color: tema.texto }]}>Bienvenido a Nexo Pay</Text>
                 <Text style={[estilos.subtitulo, { color: tema.textoSuave }]}>Vamos a dejarlo listo en menos de un minuto.</Text>
               </View>
               {[
@@ -279,7 +279,7 @@ export default function Onboarding({ onTerminar, soloVista = false }: { onTermin
         ) : null}
         <Presionable
           onPress={siguiente}
-          accessibilityLabel={paso === 2 ? 'Empezar a usar Balanz' : 'Continuar'}
+          accessibilityLabel={paso === 2 ? 'Empezar a usar Nexo Pay' : 'Continuar'}
           style={[estilos.boton, { backgroundColor: tema.primario }]}
         >
           <Text style={{ color: tema.primarioTexto, fontSize: 17, fontWeight: '800' }}>{paso === 2 ? 'Empezar' : 'Continuar'}</Text>

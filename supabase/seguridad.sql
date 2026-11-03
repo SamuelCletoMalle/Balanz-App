@@ -1,6 +1,6 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
--- Balanz: cada usuario solo puede ver y tocar SUS gastos.
+-- Nexo Pay: cada usuario solo puede ver y tocar SUS gastos.
 -- Pégalo en Supabase > SQL Editor > Run. Se puede ejecutar varias veces sin problema.
 
 alter table public.gastos enable row level security;

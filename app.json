@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Balanz",
+    "name": "Nexo Pay",
     "slug": "balanz-app",
-    "version": "3.2.3",
+    "version": "3.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "balanz",
@@ -16,7 +16,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
-        "backgroundColor": "#09090b"
+        "backgroundColor": "#08090c"
       },
       "package": "app.balanz.mobile",
       "versionCode": 1
@@ -33,7 +33,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
-          "backgroundColor": "#09090b"
+          "backgroundColor": "#08090c"
         }
       ],
       "expo-sharing",
@@ -41,14 +41,14 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Balanz usa Face ID para proteger tus datos financieros."
+          "faceIDPermission": "Nexo Pay usa Face ID para proteger tus datos financieros."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Balanz usa la cámara para guardar la foto del ticket.",
-          "photosPermission": "Balanz accede a tus fotos para adjuntar tickets."
+          "cameraPermission": "Nexo Pay usa la cámara para guardar la foto del ticket.",
+          "photosPermission": "Nexo Pay accede a tus fotos para adjuntar tickets."
         }
       ],
       "expo-audio"

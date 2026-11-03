@@ -1,6 +1,6 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
--- Balanz: alta directa de movimientos desde un Atajo, sin pasar por Pendientes ni abrir la app.
+-- Nexo Pay: alta directa de movimientos desde un Atajo, sin pasar por Pendientes ni abrir la app.
 -- Pégalo en Supabase > SQL Editor > Run. Se puede ejecutar varias veces.
 
 -- 1) Lee un texto libre ("Café 3,50", "Ingreso 20 Abuela", un SMS del banco…) y saca importe, concepto, tipo y categoría.

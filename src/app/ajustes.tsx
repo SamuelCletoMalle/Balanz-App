@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useCallback, useState, useEffect, ReactNode } from 'react';
@@ -229,7 +229,7 @@ export default function MasScreen() {
 
   const cambiarAvisos = async (on: boolean) => {
     if (on && !(await pedirPermisoAvisos())) {
-      Alert.alert('Permiso denegado', 'Activa las notificaciones de Balanz en los ajustes del móvil.');
+      Alert.alert('Permiso denegado', 'Activa las notificaciones de Nexo Pay en los ajustes del móvil.');
       return;
     }
     activarAvisos(on);
@@ -276,7 +276,7 @@ export default function MasScreen() {
   const invitar = async () => {
     const enlace = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'https://balanz-app.vercel.app';
     const mensaje =
-      'Familia, os paso una app para controlar el dinero: Balanz. Apuntáis lo que gastáis y lo que ingresáis y veis cuánto os queda. ' +
+      'Familia, os paso una app para controlar el dinero: Nexo Pay. Apuntáis lo que gastáis y lo que ingresáis y veis cuánto os queda. ' +
       'Cada uno tiene su cuenta y nadie ve los datos de otro.\n\n' +
       'Entrad aquí: ' + enlace + '\n' +
       '1) Pulsad "Regístrate" con vuestro correo y una contraseña de mínimo 10 caracteres, con letras y números.\n' +
@@ -305,7 +305,7 @@ export default function MasScreen() {
   const restaurar = () =>
     Alert.alert(
       'Restaurar una copia',
-      'Elige un archivo de copia de Balanz. Lo que contiene se mezcla con lo que ya tienes: se añade lo que falta y se actualiza lo que coincide. No se borra nada.',
+      'Elige un archivo de copia de Nexo Pay. Lo que contiene se mezcla con lo que ya tienes: se añade lo que falta y se actualiza lo que coincide. No se borra nada.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -405,7 +405,7 @@ export default function MasScreen() {
   const inicial = (session?.user.email ?? '?').charAt(0).toUpperCase();
 
   return (
-    <ScrollView style={{ backgroundColor: tema.fondo }} contentContainerStyle={[styles.container, escritorio ? styles.centrado : null]} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.container, escritorio ? styles.centrado : null]} showsVerticalScrollIndicator={false}>
 <Escalonado>
       <Text style={[styles.titulo, { color: tema.texto }, abarcar]}>Más</Text>
 
@@ -440,13 +440,20 @@ export default function MasScreen() {
         <Fila tema={tema} icono="wallet-outline" titulo="Saldo disponible" detalle={`Ahora: ${formatoEuro(saldoActual)} · toca para ajustarlo`} onPress={abrirSaldo} />
         <Fila tema={tema} icono="cash-outline" titulo="Dinero inicial" detalle={fondosTotal > 0 ? `Empezaste con ${formatoEuro(fondosTotal)}` : 'Indica con cuánto dinero empiezas'} onPress={abrirFondos} />
         <Fila tema={tema} icono="people-outline" titulo="Gastos compartidos" detalle="Quién te debe" onPress={() => router.push('/compartidos')} />
-        <Fila tema={tema} icono="color-palette-outline" titulo="Categorías" detalle={`Las tuyas y ${cuentas.reglas} ${cuentas.reglas === 1 ? "comercio" : "comercios"} que Balanz ya recuerda`} onPress={() => router.push('/categorias')} ultimo />
+        <Fila tema={tema} icono="color-palette-outline" titulo="Categorías" detalle={`Las tuyas y ${cuentas.reglas} ${cuentas.reglas === 1 ? "comercio" : "comercios"} que Nexo Pay ya recuerda`} onPress={() => router.push('/categorias')} ultimo />
       </View>
       </View>
 
       <View style={[{ gap: 10 }, bloque]}>
       <Text style={[styles.seccion, { color: tema.textoSuave }]}>CAPTURA AUTOMÁTICA</Text>
       <View style={[styles.grupo, { backgroundColor: tema.tarjeta }]}>
+        <Fila
+          tema={tema}
+          icono="business-outline"
+          titulo="Bancos"
+          detalle="Conecta tu banco y los pagos entran solos"
+          onPress={() => router.push('/bancos')}
+        />
         <Fila
           tema={tema}
           icono="flash-outline"
@@ -599,14 +606,14 @@ export default function MasScreen() {
 
       </Grupo>
 
-      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Balanz · versión {Constants.expoConfig?.version ?? ''}</Text>
+      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Nexo Pay · versión {Constants.expoConfig?.version ?? ''}</Text>
       <Modal visible={saldoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setSaldoAbierto(false)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setSaldoAbierto(false)} />
           <View style={[styles.hoja, { backgroundColor: tema.fondo }]}>
             <Text style={{ color: tema.texto, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 }}>Saldo disponible</Text>
             <Text style={{ color: tema.textoSuave, fontSize: 13, marginTop: -6 }}>
-              Escribe cuánto dinero tienes ahora de verdad. Balanz ajusta tu dinero inicial para que el saldo coincida, sin tocar tus movimientos.
+              Escribe cuánto dinero tienes ahora de verdad. Nexo Pay ajusta tu dinero inicial para que el saldo coincida, sin tocar tus movimientos.
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: tema.tarjeta, borderColor: tema.borde, borderWidth: 1, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 14 }}>
               <TextInput
@@ -675,7 +682,7 @@ export default function MasScreen() {
           <View style={[styles.hoja, { backgroundColor: tema.fondo }]}>
             <Text style={{ color: tema.texto, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 }}>Dinero inicial</Text>
             <Text style={{ color: tema.textoSuave, fontSize: 13, marginTop: -6 }}>
-              Lo que tenías al empezar a usar Balanz. Tu saldo se calcula a partir de esto, más tus ingresos y menos tus gastos.
+              Lo que tenías al empezar a usar Nexo Pay. Tu saldo se calcula a partir de esto, más tus ingresos y menos tus gastos.
             </Text>
             <FondosForm valores={fondosTexto} onCambio={(c, v) => setFondosTexto({ ...fondosTexto, [c]: v })} />
             <View style={{ flexDirection: 'row', gap: 10 }}>

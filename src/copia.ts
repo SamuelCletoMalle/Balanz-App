@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { Platform } from 'react-native';
@@ -96,10 +96,10 @@ export function leerCopia(texto: string): Copia {
   try {
     c = JSON.parse(texto);
   } catch {
-    throw new Error('El archivo no es una copia de Balanz (no se puede leer).');
+    throw new Error('El archivo no es una copia de Nexo Pay (no se puede leer).');
   }
   if (c.app !== 'balanz' || c.version !== 1 || !Array.isArray(c.gastos)) {
-    throw new Error('El archivo no es una copia de Balanz.');
+    throw new Error('El archivo no es una copia de Nexo Pay.');
   }
   return {
     app: 'balanz',

@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useRef } from 'react';
@@ -33,7 +33,7 @@ export const LOGO_CABECERA = { tamano: 36, margen: 16 };
 /** En escritorio aterriza en el logo de la barra lateral (esquina superior izquierda). */
 export const LOGO_LATERAL = { tamano: 38, x: 14 + 8 + 19, y: 28 + 19 };
 const TAMANO_INTRO = 200;
-const NOMBRE = 'Balanz'.split('');
+const NOMBRE = 'Nexo Pay'.split('');
 
 function Letra({ letra, progreso, indice }: { letra: string; progreso: SharedValue<number>; indice: number }) {
   // Cada letra arranca un poco después de la anterior (el progreso global va de 0 a 1 en el tramo del nombre).
@@ -50,7 +50,7 @@ function Letra({ letra, progreso, indice }: { letra: string; progreso: SharedVal
 
 /**
  * Pantalla de entrada (una vez por arranque, ~2,5 s):
- * 1. un resplandor lima respira detrás; 2. la Z se dibuja trazo a trazo y la moneda cae con rebote;
+ * 1. un resplandor azul respira detrás; 2. el símbolo emerge con un rebote;
  * 3. el nombre aparece letra a letra y el lema se funde; 4. el logo se encoge y viaja a la cabecera mientras el fondo
  * se disuelve y deja ver la app. Un toque la salta. Con "reducir animaciones": logo quieto y fundido corto.
  */
@@ -61,10 +61,7 @@ export default function Intro({ onFin }: { onFin: () => void }) {
   const { width, height } = useWindowDimensions();
   const { escritorio } = useDisposicion();
 
-  const barraArriba = useSharedValue(quieto ? 1 : 0);
-  const diagonal = useSharedValue(quieto ? 1 : 0);
-  const barraAbajo = useSharedValue(quieto ? 1 : 0);
-  const moneda = useSharedValue(quieto ? 1 : 0);
+  const revelado = useSharedValue(quieto ? 1 : 0);
   const nombre = useSharedValue(quieto ? 1 : 0);
   const lema = useSharedValue(quieto ? 1 : 0);
   const brillo = useSharedValue(quieto ? 1 : 0);
@@ -91,11 +88,8 @@ export default function Intro({ onFin }: { onFin: () => void }) {
       salida.set(withDelay(700, withTiming(0, { duration: 220, easing: SALIDA }, (ok) => ok && scheduleOnRN(terminar))));
       return;
     }
-    barraArriba.set(withDelay(80, withTiming(1, { duration: 300, easing: SALIDA })));
-    diagonal.set(withDelay(240, withTiming(1, { duration: 380, easing: SALIDA })));
-    barraAbajo.set(withDelay(500, withTiming(1, { duration: 300, easing: SALIDA })));
-    // La moneda cae con un pequeño rebote: es el único momento "físico" de toda la secuencia.
-    moneda.set(withDelay(780, withSpring(1, { duration: 450, dampingRatio: 0.55, reduceMotion: ReduceMotion.Never })));
+    // El símbolo emerge de la oscuridad con un pequeño rebote: es el único momento "físico" de toda la secuencia.
+    revelado.set(withDelay(80, withSpring(1, { duration: 700, dampingRatio: 0.8, reduceMotion: ReduceMotion.Never })));
     destello.set(withDelay(900, withTiming(1, { duration: 520, easing: MOVIMIENTO })));
     brillo.set(withDelay(700, withTiming(1, { duration: 900, easing: SALIDA })));
     nombre.set(withDelay(1100, withTiming(1, { duration: 650, easing: SALIDA })));
@@ -132,7 +126,7 @@ export default function Intro({ onFin }: { onFin: () => void }) {
     opacity: brillo.get() * (0.75 + 0.25 * Math.sin(brillo.get() * Math.PI)),
     transform: [{ scale: 0.85 + 0.15 * brillo.get() }],
   }));
-  // Destello: una franja de luz que cruza el logo una vez, justo después de que caiga la moneda.
+  // Destello: una franja de luz que cruza el logo una vez, justo después de que aparezca el símbolo.
   const estiloDestello = useAnimatedStyle(() => ({
     opacity: interpolate(destello.get(), [0, 0.2, 0.8, 1], [0, 0.9, 0.9, 0]),
     transform: [{ translateX: interpolate(destello.get(), [0, 1], [-TAMANO_INTRO, TAMANO_INTRO]) }, { rotate: '20deg' }],
@@ -145,16 +139,16 @@ export default function Intro({ onFin }: { onFin: () => void }) {
   };
 
   return (
-    <Animated.View style={styles.raiz} accessibilityLabel="Balanz" accessibilityRole="image" pointerEvents="box-none">
+    <Animated.View style={styles.raiz} accessibilityLabel="Nexo Pay" accessibilityRole="image" pointerEvents="box-none">
       <Animated.View style={[StyleSheet.absoluteFill, styles.fondo, estiloFondo]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={saltar} accessibilityLabel="Saltar la introducción" />
       </Animated.View>
       <View pointerEvents="none" style={styles.centro}>
         <Animated.View style={[styles.brillo, estiloBrillo]}>
-          <Halo size={560} color="#bef264" intensidad={0.2} />
+          <Halo size={560} color="#4452FF" intensidad={0.2} />
         </Animated.View>
         <Animated.View style={estiloMarca}>
-          <Logo size={TAMANO_INTRO} progreso={{ barraArriba, diagonal, barraAbajo, moneda }} />
+          <Logo size={TAMANO_INTRO} progreso={{ revelado }} />
           <View style={styles.recorteDestello} pointerEvents="none">
             <Animated.View style={[styles.destello, estiloDestello]} />
           </View>
@@ -168,7 +162,7 @@ export default function Intro({ onFin }: { onFin: () => void }) {
         </Animated.View>
         <Animated.View style={[styles.bloqueLema, estiloTextos]}>
           <Animated.View style={estiloLema}>
-            <Text style={styles.lema}>Tu dinero, en equilibrio.</Text>
+            <Text style={styles.lema}>Tu dinero, conectado.</Text>
           </Animated.View>
         </Animated.View>
       </View>
@@ -178,7 +172,7 @@ export default function Intro({ onFin }: { onFin: () => void }) {
 
 const styles = StyleSheet.create({
   raiz: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
-  fondo: { backgroundColor: '#09090b' },
+  fondo: { backgroundColor: '#08090c' },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   brillo: { position: 'absolute', marginTop: -60 },
   recorteDestello: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 48, overflow: 'hidden' },

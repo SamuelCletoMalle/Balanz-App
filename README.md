@@ -1,17 +1,17 @@
 <div align="center">
 
-<a href="https://balanz-app.vercel.app"><img src="docs/banner.svg" width="960" alt="Balanz — Tu dinero, en equilibrio. App de control de gastos e ingresos para móvil y web"></a>
+<a href="https://balanz-app.vercel.app"><img src="docs/banner.svg" width="960" alt="Nexo Pay — Tu dinero, conectado. App de control de gastos e ingresos para móvil y web"></a>
 
 <br><br>
 
-<a href="https://balanz-app.vercel.app"><img src="https://img.shields.io/badge/Probar_la_web-balanz--app.vercel.app-bef264?style=for-the-badge&logo=vercel&logoColor=0a0a0a&labelColor=18181b" alt="Probar la web"></a>
+<a href="https://balanz-app.vercel.app"><img src="https://img.shields.io/badge/Probar_la_web-balanz--app.vercel.app-7c86ff?style=for-the-badge&logo=vercel&logoColor=0a0a0a&labelColor=18181b" alt="Probar la web"></a>
 
-![Expo](https://img.shields.io/badge/Expo_SDK_57-18181b?style=flat&logo=expo&logoColor=bef264)
-![React Native](https://img.shields.io/badge/React_Native_0.86-18181b?style=flat&logo=react&logoColor=bef264)
-![TypeScript](https://img.shields.io/badge/TypeScript-18181b?style=flat&logo=typescript&logoColor=bef264)
-![Supabase](https://img.shields.io/badge/Supabase-18181b?style=flat&logo=supabase&logoColor=bef264)
-![SQLite](https://img.shields.io/badge/SQLite-18181b?style=flat&logo=sqlite&logoColor=bef264)
-![Vercel](https://img.shields.io/badge/Vercel-18181b?style=flat&logo=vercel&logoColor=bef264)
+![Expo](https://img.shields.io/badge/Expo_SDK_57-18181b?style=flat&logo=expo&logoColor=7c86ff)
+![React Native](https://img.shields.io/badge/React_Native_0.86-18181b?style=flat&logo=react&logoColor=7c86ff)
+![TypeScript](https://img.shields.io/badge/TypeScript-18181b?style=flat&logo=typescript&logoColor=7c86ff)
+![Supabase](https://img.shields.io/badge/Supabase-18181b?style=flat&logo=supabase&logoColor=7c86ff)
+![SQLite](https://img.shields.io/badge/SQLite-18181b?style=flat&logo=sqlite&logoColor=7c86ff)
+![Vercel](https://img.shields.io/badge/Vercel-18181b?style=flat&logo=vercel&logoColor=7c86ff)
 
 Hecho por **Samuel Cleto Malle** · [Portfolio](https://samuelcletomalle.github.io) · [GitHub](https://github.com/SamuelCletoMalle) · [LinkedIn](https://www.linkedin.com/in/samuelcletomalle)
 
@@ -21,14 +21,14 @@ Hecho por **Samuel Cleto Malle** · [Portfolio](https://samuelcletomalle.github.
 
 ## 💡 Qué es
 
-Balanz sirve para llevar el control del dinero del día a día: anotar gastos e ingresos en dos toques, saber cuánto
+Nexo Pay sirve para llevar el control del dinero del día a día: anotar gastos e ingresos en dos toques, saber cuánto
 tienes de verdad, fijar presupuestos y metas de ahorro, y **captar los pagos del banco sin teclear nada**.
 
 Nació para uso familiar (cada persona tiene su cuenta y nadie ve los datos de otro) y es mi primer proyecto completo de
 principio a fin: diseño, base de datos local, sincronización en la nube, seguridad por usuario y despliegue en
 producción. Una sola base de código en TypeScript funciona en móvil y en web.
 
-**Versión 3.0.** Rediseño completo: identidad nueva (negro y lima), logo nuevo, animaciones y la app reorganizada en 5 pestañas (Inicio, Movimientos, Planes, Resumen y Más). Las versiones anteriores están en las etiquetas `v1.0` y `v2.0`. Probada en emulador Android y en la web (móvil y escritorio). Las partes que dependen del hardware
+**Versión 3.0.** Rediseño completo: identidad nueva (carbón, plata y azul eléctrico), logo nuevo, animaciones y la app reorganizada en 5 pestañas (Inicio, Movimientos, Planes, Resumen y Más). Las versiones anteriores están en las etiquetas `v1.0` y `v2.0`. Probada en emulador Android y en la web (móvil y escritorio). Las partes que dependen del hardware
 (Face ID, vibraciones, cámara) están programadas pero no las he podido verificar en un iPhone real.
 
 ## ✨ Funciones
@@ -58,7 +58,7 @@ producción. Una sola base de código en TypeScript funciona en móvil y en web.
 <details>
 <summary><b>⚡ Captura de pagos, en detalle</b></summary>
 
-- **iPhone:** un Atajo recoge el pago al pagar con Apple Pay o al llegar un SMS del banco y lo manda a Balanz.
+- **iPhone:** un Atajo recoge el pago al pagar con Apple Pay o al llegar un SMS del banco y lo manda a Nexo Pay.
 - **Android:** MacroDroid o Tasker leen la notificación del banco y la envían igual.
 - **Sin abrir la app:** un botón en el Centro de Control (o el botón de acción del iPhone) pregunta, por ejemplo,
   `Café 3,50` y lo apunta.

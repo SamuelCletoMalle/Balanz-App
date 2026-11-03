@@ -1,9 +1,9 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
@@ -12,6 +12,7 @@ import { useQuieto } from './ui';
 import { seleccion } from '../haptics';
 import { pestanaActiva } from '../navegacion';
 import { IconoNombre, useTema } from '../tema';
+import { cristal, esContraste, lente } from './cristal';
 
 const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
   index: ['home-outline', 'home'],
@@ -48,10 +49,8 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
   }, [posicion, hueco, quieto, x]);
   const estiloIndicador = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }], width: hueco }));
 
-  const vidrio: ViewStyle =
-    Platform.OS === 'web'
-      ? ({ backdropFilter: 'blur(22px) saturate(160%)', WebkitBackdropFilter: 'blur(22px) saturate(160%)' } as unknown as ViewStyle)
-      : {};
+  const contraste = esContraste(tema.borde);
+  const vidrio: ViewStyle = contraste ? {} : { ...cristal(tema.oscuro, 2), borderWidth: 0, borderTopWidth: 1, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' };
 
   return (
     <View style={[styles.contenedor, { paddingBottom: insets.bottom, backgroundColor: tema.vidrio, borderColor: tema.borde }, vidrio]}>
@@ -59,7 +58,7 @@ export default function BarraInferior({ state, descriptors, navigation, insets }
         {hueco > 0 ? (
           <Animated.View
             pointerEvents="none"
-            style={[styles.indicador, { backgroundColor: tema.oscuro ? 'rgba(190,242,100,0.16)' : 'rgba(10,10,10,0.07)' }, estiloIndicador]}
+            style={[styles.indicador, contraste ? { backgroundColor: 'rgba(124,134,255,0.18)' } : lente(tema.oscuro), estiloIndicador]}
           />
         ) : null}
         {visibles.map((ruta, i) => {

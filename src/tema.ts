@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useColorScheme } from 'react-native';
@@ -60,8 +60,8 @@ export function infoCategoria(nombre: string): Categoria {
   return todas.find((c) => c.nombre === nombre) ?? todas[todas.length - 1];
 }
 
-// Marca: negro profundo + lima eléctrica (el color del logo). En claro, la lima va de acento y la tinta es casi negra,
-// porque la lima sobre blanco no cumple el contraste AA; en oscuro la lima es el primario.
+// Marca (estilo Nexo Dev): carbón + plata + azul eléctrico. En claro, el azul claro va de acento y la tinta es casi negra,
+// porque ese azul sobre blanco no cumple el contraste AA; en oscuro el azul claro es el primario.
 export type Tema = {
   /** Nivel 0: fondo de la pantalla. */
   fondo: string;
@@ -76,7 +76,7 @@ export type Tema = {
   borde: string;
   primario: string;
   primarioTexto: string;
-  /** Lima de la marca, igual en claro y en oscuro (para destacar, nunca como texto sobre claro). */
+  /** Azul de la marca, igual en claro y en oscuro (para destacar, nunca como texto sobre claro). */
   acento: string;
   acentoTexto: string;
   peligro: string;
@@ -93,46 +93,46 @@ export type Tema = {
 };
 
 const claro: Tema = {
-  fondo: '#f5f5f2',
+  fondo: '#f4f5f8',
   tarjeta: '#ffffff',
-  tarjetaSuave: '#eeeeea',
+  tarjetaSuave: '#eceef3',
   elevada: '#ffffff',
   texto: '#0a0a0a',
   textoSuave: '#5b5b56',
-  borde: '#e1e1db',
+  borde: '#dde0e8',
   primario: '#18181b',
   primarioTexto: '#ffffff',
-  acento: '#bef264',
-  acentoTexto: '#0a0a0a',
+  acento: '#7c86ff',
+  acentoTexto: '#08090c',
   peligro: '#dc2626',
   exito: '#15803d',
   aviso: '#b45309',
   sombra: '#0a0a0a',
-  marca: ['#d9f99d', '#bef264'],
-  marcaTexto: '#0a0a0a',
+  marca: ['#2a303c', '#0c0f15'],
+  marcaTexto: '#f5f6f8',
   vidrio: 'rgba(255,255,255,0.78)',
   oscuro: false,
 };
 
 const oscuro: Tema = {
-  fondo: '#09090b',
-  tarjeta: '#141416',
-  tarjetaSuave: '#1e1e22',
-  elevada: '#1a1a1e',
-  texto: '#fafafa',
-  textoSuave: '#a1a1aa',
-  borde: '#27272a',
-  primario: '#bef264',
-  primarioTexto: '#0a0a0a',
-  acento: '#bef264',
-  acentoTexto: '#0a0a0a',
+  fondo: '#08090c',
+  tarjeta: '#12151b',
+  tarjetaSuave: '#1b1f27',
+  elevada: '#181c23',
+  texto: '#f5f6f8',
+  textoSuave: '#a3a9b5',
+  borde: '#252a33',
+  primario: '#7c86ff',
+  primarioTexto: '#08090c',
+  acento: '#7c86ff',
+  acentoTexto: '#08090c',
   peligro: '#fb7185',
   exito: '#4ade80',
   aviso: '#fbbf24',
   sombra: '#000000',
-  marca: ['#d9f99d', '#bef264'],
-  marcaTexto: '#0a0a0a',
-  vidrio: 'rgba(20,20,22,0.74)',
+  marca: ['#2a303c', '#0c0f15'],
+  marcaTexto: '#f5f6f8',
+  vidrio: 'rgba(18,21,27,0.74)',
   oscuro: true,
 };
 
@@ -148,7 +148,7 @@ const claroContraste: Tema = {
   exito: '#14532d',
   aviso: '#78350f',
   sombra: '#000000',
-  marca: ['#bef264', '#bef264'],
+  marca: ['#1a1f2b', '#1a1f2b'],
   vidrio: '#ffffff',
 };
 
@@ -160,7 +160,7 @@ const oscuroContraste: Tema = {
   elevada: '#000000',
   textoSuave: '#e5e7eb',
   borde: '#ffffff',
-  primario: '#d9f99d',
+  primario: '#b4baff',
   peligro: '#fca5a5',
   exito: '#86efac',
   aviso: '#fde68a',

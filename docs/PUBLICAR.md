@@ -1,6 +1,6 @@
-# Publicar Balanz en Google Play y App Store
+# Publicar Nexo Pay en Google Play y App Store
 
-Balanz ya funciona como web instalable. Esta guía es para llevarla también a las tiendas, con las ventajas de una app
+Nexo Pay ya funciona como web instalable. Esta guía es para llevarla también a las tiendas, con las ventajas de una app
 nativa: notificaciones con la app cerrada, widgets y el botón del panel de control sin pasar por Atajos.
 
 > Las tiendas piden crear cuentas de desarrollador a nombre del autor y pagar una cuota; por eso este paso lo tiene que

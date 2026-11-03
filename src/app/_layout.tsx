@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useRef, useState } from 'react';
@@ -22,6 +22,8 @@ import RecuperarContrasena from '../components/RecuperarContrasena';
 import Aviso from '../components/Aviso';
 import { leerEnlace, traducirError } from '../autenticacion';
 import Bloqueo from '../components/Bloqueo';
+import { repasarBancos } from '../bancos';
+import Ambiente from '../components/Ambiente';
 import Intro from '../components/Intro';
 import BarraInferior from '../components/BarraInferior';
 import BarraLateral from '../components/BarraLateral';
@@ -42,7 +44,7 @@ import type { Session } from '@supabase/supabase-js';
 // El splash nativo se queda hasta que las fuentes están listas, para que no haya un salto de tipografía.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const OCULTAS = ['pendientes', 'categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'nuevo', 'bienvenida'] as const;
+const OCULTAS = ['pendientes', 'categorias', 'atajos', 'recurrentes', 'metas', 'compartidos', 'informe', 'reglas', 'bancos', 'nuevo', 'bienvenida'] as const;
 
 function conTiempoMaximo<T>(promesa: Promise<T>, ms: number): Promise<T | undefined> {
   return Promise.race([promesa, new Promise<undefined>((resolver) => setTimeout(() => resolver(undefined), ms))]);
@@ -111,7 +113,7 @@ export default function RootLayout() {
         }
       }
       if (e.tipo === 'recovery') setRecuperando(true);
-      else if (e.tipo === 'signup' || e.tipo === 'email') setMensajeEnlace('Correo confirmado. ¡Ya puedes usar Balanz!');
+      else if (e.tipo === 'signup' || e.tipo === 'email') setMensajeEnlace('Correo confirmado. ¡Ya puedes usar Nexo Pay!');
       else if (e.tipo === 'email_change') setMensajeEnlace('Correo actualizado. Desde ahora entras con el nuevo.');
       else if (e.mensaje && e.mensaje.toLowerCase().includes('other email')) setMensajeEnlace('Enlace aceptado. Falta abrir el que te hemos enviado a la otra dirección de correo.');
     };
@@ -171,6 +173,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (!session) return;
     const refrescar = async () => {
+      // Los bancos conectados se repasan como mucho cada 10 minutos (el banco limita las consultas).
+      await repasarBancos().catch(() => 0);
       const nuevos = await sincronizarCaptaciones().catch(() => 0);
       avisarPendientesNuevos(nuevos);
       // Lo que se haya hecho en otro dispositivo (movimientos, metas, ajustes…) aparece sin tener que cambiar de pantalla.
@@ -256,13 +260,15 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <HojaNuevoMovimiento />
         <AlertaLimite />
+        <View style={{ flex: 1, backgroundColor: tema.fondo }}>
+        <Ambiente />
         <Tabs
           backBehavior="history"
           tabBar={(props) => (escritorio ? <BarraLateral {...props} /> : <BarraInferior {...props} />)}
           screenLayout={
             escritorio
               ? ({ children }) => (
-                  <View style={{ flex: 1, alignItems: 'center', backgroundColor: tema.fondo }}>
+                  <View style={{ flex: 1, alignItems: 'center' }}>
                     <View style={{ flex: 1, width: '100%', maxWidth: amplio ? 1500 : 880 }}>{children}</View>
                   </View>
                 )
@@ -279,7 +285,7 @@ export default function RootLayout() {
               ? { backgroundColor: tema.tarjeta, borderRightColor: tema.borde, borderRightWidth: 1, width: 220, paddingTop: 24 }
               : { backgroundColor: tema.tarjeta, borderTopColor: tema.borde },
             tabBarLabelStyle: escritorio ? { fontWeight: '600', fontSize: 15 } : { fontWeight: '600', fontSize: 11 },
-            sceneStyle: { backgroundColor: tema.fondo },
+            sceneStyle: { backgroundColor: 'transparent' },
           }}
         >
           <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
@@ -291,6 +297,7 @@ export default function RootLayout() {
             <Tabs.Screen key={nombre} name={nombre} options={nombre === 'bienvenida' ? { href: null, tabBarStyle: { display: 'none' } } : { href: null }} />
           ))}
         </Tabs>
+        </View>
       </>
     );
   }

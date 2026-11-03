@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useState } from 'react';
@@ -34,7 +34,7 @@ export default function RecuperarContrasena({ onTerminar }: { onTerminar: (mensa
     const { error: fallo } = await supabase.auth.updateUser({ password: nueva });
     setCargando(false);
     if (fallo) return setError(traducirError(fallo.message));
-    onTerminar('Contraseña cambiada. Ya puedes usar Balanz con la nueva.');
+    onTerminar('Contraseña cambiada. Ya puedes usar Nexo Pay con la nueva.');
   };
 
   const cancelar = async () => {
@@ -45,7 +45,7 @@ export default function RecuperarContrasena({ onTerminar }: { onTerminar: (mensa
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: tema.fondo }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View pointerEvents="none" style={styles.halo}>
-        <Halo size={620} color="#bef264" intensidad={tema.oscuro ? 0.16 : 0.32} />
+        <Halo size={620} color="#4452FF" intensidad={tema.oscuro ? 0.16 : 0.32} />
       </View>
       <View style={styles.columna}>
         <View style={{ alignSelf: 'center' }}>

@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { arriba } from '../layout';
@@ -98,7 +98,7 @@ export function MetasContenido({ embebido = false }: { embebido?: boolean }) {
   const totalAhorrado = metas.reduce((s, m) => s + m.ahorrado, 0);
 
   return (
-    <View style={[styles.container, { backgroundColor: tema.fondo }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }, embebido ? { paddingTop: 0, paddingHorizontal: 0 } : null]}>
       {embebido ? null : (
         <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.volver}>
           <Ionicons name="chevron-back" size={22} color={tema.primario} />

@@ -1,6 +1,6 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
--- Balanz: captación de gastos desde Atajos de iOS / SMS / notificaciones.
+-- Nexo Pay: captación de gastos desde Atajos de iOS / SMS / notificaciones.
 -- Pega este script entero en Supabase > SQL Editor > Run (una sola vez).
 
 -- 1) Token personal por usuario (lo usa el atajo para identificarte sin sesión).

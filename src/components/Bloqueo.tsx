@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useCallback } from 'react';
@@ -25,7 +25,7 @@ export default function Bloqueo({ onDesbloquear }: { onDesbloquear: () => void }
       <View style={[styles.icono, { backgroundColor: tema.primario }]}>
         <Ionicons name="lock-closed" size={38} color={tema.primarioTexto} />
       </View>
-      <Text style={[styles.titulo, { color: tema.texto }]}>Balanz bloqueado</Text>
+      <Text style={[styles.titulo, { color: tema.texto }]}>Nexo Pay bloqueado</Text>
       <Text style={{ color: tema.textoSuave, textAlign: 'center' }}>Usa Face ID, tu huella o el código del móvil.</Text>
       <TouchableOpacity accessibilityRole="button" style={[styles.boton, { backgroundColor: tema.primario }]} onPress={intentar}>
         <Ionicons name="finger-print" size={20} color={tema.primarioTexto} />

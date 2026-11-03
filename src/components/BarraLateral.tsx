@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { useEffect, useRef } from 'react';
@@ -12,6 +12,7 @@ import { Text } from './Texto';
 import { useQuieto } from './ui';
 import { pestanaActiva } from '../navegacion';
 import { IconoNombre, useTema } from '../tema';
+import { cristal, esContraste, lente } from './cristal';
 import { useIntroLista } from '../intro-estado';
 
 const ICONOS: Record<string, [IconoNombre, IconoNombre]> = {
@@ -44,17 +45,17 @@ export default function BarraLateral({ state, descriptors, navigation }: BottomT
   const estiloIndicador = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }] }));
 
   return (
-    <View style={[styles.barra, { backgroundColor: tema.fondo, borderRightColor: tema.borde }]} accessibilityRole="tablist">
+    <View style={[styles.barra, { backgroundColor: tema.fondo, borderRightColor: tema.borde }, esContraste(tema.borde) ? null : { ...cristal(tema.oscuro, 1), borderWidth: 0, borderRightWidth: 1, boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.10)' }]} accessibilityRole="tablist">
       <View style={styles.marca}>
         <View style={{ opacity: introLista ? 1 : 0 }}>
           <Logo size={38} />
         </View>
-        <Text style={{ color: tema.texto, fontSize: 24, fontWeight: '800', letterSpacing: -0.6 }}>Balanz</Text>
+        <Text style={{ color: tema.texto, fontSize: 24, fontWeight: '800', letterSpacing: -0.6 }}>Nexo Pay</Text>
       </View>
       <View style={styles.lista}>
         <Animated.View
           pointerEvents="none"
-          style={[styles.indicador, { backgroundColor: tema.oscuro ? 'rgba(190,242,100,0.14)' : 'rgba(10,10,10,0.07)' }, estiloIndicador]}
+          style={[styles.indicador, esContraste(tema.borde) ? { backgroundColor: 'rgba(124,134,255,0.16)' } : lente(tema.oscuro), estiloIndicador]}
         />
         {visibles.map((ruta, i) => {
           const { options } = descriptors[ruta.key];

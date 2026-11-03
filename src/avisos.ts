@@ -1,5 +1,5 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 import { Platform } from 'react-native';
@@ -78,7 +78,7 @@ export function avisarPendientesNuevos(n: number) {
   if (n <= 0) return;
   notificar(
     n === 1 ? 'Nuevo gasto detectado' : `${n} gastos detectados`,
-    'Ábrelo en Balanz para revisarlo y añadirlo.'
+    'Ábrelo en Nexo Pay para revisarlo y añadirlo.'
   );
 }
 

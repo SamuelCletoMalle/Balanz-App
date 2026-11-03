@@ -1,12 +1,12 @@
 /**
- * Balanz · control de gastos personales
+ * Nexo Pay · control de gastos personales
  * Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
  */
 // Service worker: deja abrir la app sin conexión. Los datos ya viven en el dispositivo; esto guarda la propia app.
 // - Páginas: primero la red (para tener siempre la versión nueva) y, si no hay conexión, la última guardada.
 // - Archivos con nombre único (/_expo/static, iconos, fuentes): primero lo guardado, porque no cambian.
 // - Nada de otros dominios (Supabase) ni peticiones que no sean GET.
-const VERSION = 'balanz-v5';
+const VERSION = 'nexopay-v8';
 const BASICOS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (evento) => {

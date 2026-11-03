@@ -1,6 +1,6 @@
--- Balanz · control de gastos personales
+-- Nexo Pay · control de gastos personales
 -- Autor: Samuel · © 2026 · Todos los derechos reservados (ver LICENSE)
--- Balanz: perfil de cada usuario (dinero inicial y límite mensual) para no repetir el alta en otro dispositivo.
+-- Nexo Pay: perfil de cada usuario (dinero inicial y límite mensual) para no repetir el alta en otro dispositivo.
 -- Pégalo en Supabase > SQL Editor > Run. Se puede ejecutar varias veces.
 
 create table if not exists public.perfiles (
