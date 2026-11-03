@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import PorNexoDev from './PorNexoDev';
 import Logo from './Logo';
 import { Text } from './Texto';
 import { useQuieto } from './ui';
@@ -50,7 +51,10 @@ export default function BarraLateral({ state, descriptors, navigation }: BottomT
         <View style={{ opacity: introLista ? 1 : 0 }}>
           <Logo size={38} />
         </View>
-        <Text style={{ color: tema.texto, fontSize: 24, fontWeight: '800', letterSpacing: -0.6 }}>Nexo Pay</Text>
+        <View>
+          <Text style={{ color: tema.texto, fontSize: 24, fontWeight: '800', letterSpacing: -0.6 }}>Nexo Pay</Text>
+          <PorNexoDev tamano={10} centrado={false} style={{ marginTop: -2 }} />
+        </View>
       </View>
       <View style={styles.lista}>
         <Animated.View

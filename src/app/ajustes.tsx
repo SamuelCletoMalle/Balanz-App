@@ -606,7 +606,7 @@ export default function MasScreen() {
 
       </Grupo>
 
-      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Nexo Pay · versión {Constants.expoConfig?.version ?? ''}</Text>
+      <Text style={[styles.version, { color: tema.textoSuave }, abarcar]}>Nexo Pay · versión {Constants.expoConfig?.version ?? ''} · By Nexo-Dev</Text>
       <Modal visible={saldoAbierto} transparent animationType={prefs.reducirMovimiento ? 'none' : 'slide'} onRequestClose={() => setSaldoAbierto(false)}>
         <KeyboardAvoidingView style={styles.modalFondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar" style={{ flex: 1 }} activeOpacity={1} onPress={() => setSaldoAbierto(false)} />

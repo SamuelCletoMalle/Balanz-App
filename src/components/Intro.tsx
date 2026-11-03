@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import Logo from './Logo';
+import PorNexoDev from './PorNexoDev';
 import Halo from './Halo';
 import { Text } from './Texto';
 import { CURVAS } from '../logo';
@@ -148,7 +149,7 @@ export default function Intro({ onFin }: { onFin: () => void }) {
           <Halo size={560} color="#4452FF" intensidad={0.2} />
         </Animated.View>
         <Animated.View style={estiloMarca}>
-          <Logo size={TAMANO_INTRO} progreso={{ revelado }} />
+          <Logo size={TAMANO_INTRO} progreso={{ revelado }} destellos inicioDestellos={500} />
           <View style={styles.recorteDestello} pointerEvents="none">
             <Animated.View style={[styles.destello, estiloDestello]} />
           </View>
@@ -159,6 +160,9 @@ export default function Intro({ onFin }: { onFin: () => void }) {
               <Letra key={i} letra={l} indice={i} progreso={nombre} />
             ))}
           </View>
+          <Animated.View style={estiloLema}>
+            <PorNexoDev tamano={12} color="#a1a1aa" style={{ marginTop: 2 }} />
+          </Animated.View>
         </Animated.View>
         <Animated.View style={[styles.bloqueLema, estiloTextos]}>
           <Animated.View style={estiloLema}>
@@ -177,9 +181,9 @@ const styles = StyleSheet.create({
   brillo: { position: 'absolute', marginTop: -60 },
   recorteDestello: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 48, overflow: 'hidden' },
   destello: { position: 'absolute', top: -40, bottom: -40, left: '40%', width: 36, backgroundColor: 'rgba(255,255,255,0.3)' },
-  bloqueTexto: { position: 'absolute', top: '50%', marginTop: 86 },
+  bloqueTexto: { position: 'absolute', top: '50%', marginTop: 86, alignItems: 'center' },
   letras: { flexDirection: 'row' },
-  bloqueLema: { position: 'absolute', top: '50%', marginTop: 152 },
+  bloqueLema: { position: 'absolute', top: '50%', marginTop: 176 },
   nombre: { color: '#ffffff', fontSize: 44, fontWeight: '800', letterSpacing: -1.2 },
   lema: { color: '#a1a1aa', fontSize: 15, letterSpacing: 0.2, textAlign: 'center' },
 });

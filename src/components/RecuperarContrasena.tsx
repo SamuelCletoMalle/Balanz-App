@@ -49,7 +49,7 @@ export default function RecuperarContrasena({ onTerminar }: { onTerminar: (mensa
       </View>
       <View style={styles.columna}>
         <View style={{ alignSelf: 'center' }}>
-          <Logo size={72} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
+          <Logo size={72} destellos flota />
         </View>
         <Text style={[styles.titulo, { color: tema.texto }]}>Elige una contraseña nueva</Text>
         <Text style={[styles.subtitulo, { color: tema.textoSuave }]}>Mínimo 10 caracteres, con letras y números.</Text>

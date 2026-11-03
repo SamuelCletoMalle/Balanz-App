@@ -9,6 +9,7 @@ import { Text, TextInput } from '../components/Texto';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../supabase';
 import { correoValido, problemaContrasena, traducirError, urlRedireccion } from '../autenticacion';
+import PorNexoDev from './PorNexoDev';
 import Logo from './Logo';
 import Halo from './Halo';
 import { Boton, useQuieto } from './ui';
@@ -108,10 +109,11 @@ export default function LoginScreen() {
       </View>
       <View style={styles.columna}>
         <Animated.View entering={entra(0)} style={styles.logo}>
-          <Logo size={88} aro={tema.oscuro ? '#0a0a0a' : '#000000'} />
+          <Logo size={88} destellos flota />
         </Animated.View>
         <Animated.View entering={entra(1)}>
           <Text style={[styles.marca, { color: tema.texto }]}>Nexo Pay</Text>
+          <PorNexoDev style={{ marginTop: -2, marginBottom: 6 }} />
           <Text style={[styles.subtitulo, { color: tema.textoSuave }]}>{subtitulo}</Text>
         </Animated.View>
 
