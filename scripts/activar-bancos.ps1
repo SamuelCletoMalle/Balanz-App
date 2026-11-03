@@ -7,6 +7,11 @@
 #
 # Uso (desde la carpeta del proyecto):  powershell -ExecutionPolicy Bypass -File scripts\activar-bancos.ps1
 
+param(
+  [string]$AppId,
+  [string]$Pem
+)
+
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
@@ -17,9 +22,11 @@ $ref = $Matches[1]
 Write-Host "Proyecto de Supabase: $ref"
 
 # 2) Datos de Enable Banking.
-$appId = (Read-Host 'Application ID de Enable Banking (el UUID)').Trim()
+if (-not $AppId) { $AppId = Read-Host 'Application ID de Enable Banking (el UUID)' }
+$appId = $AppId.Trim()
 if ($appId -notmatch '^[0-9a-fA-F-]{36}$') { throw 'Ese Application ID no parece un UUID.' }
-$ruta = (Read-Host 'Ruta del archivo .pem de la clave privada (puedes arrastrarlo aquí)').Trim('"', ' ')
+if (-not $Pem) { $Pem = Read-Host 'Ruta del archivo .pem de la clave privada (puedes arrastrarlo aquí)' }
+$ruta = $Pem.Trim('"', ' ')
 if (-not (Test-Path $ruta)) { throw "No encuentro el archivo: $ruta" }
 $pem = Get-Content $ruta -Raw
 if ($pem -notmatch 'PRIVATE KEY') { throw 'Ese archivo no parece una clave privada (.pem).' }
